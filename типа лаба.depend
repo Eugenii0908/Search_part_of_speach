@@ -1,0 +1,9 @@
+# depslib dependency file v1.0
+1761253037 source:c:\users\Никита\onedrive\Рабочий стол\учёба архив\трпо\типа лаба\main.cpp
+	<fstream>
+	<conio.h>
+	<windows.h>
+	<sstream>
+	<string>
+	<bitset>
+
