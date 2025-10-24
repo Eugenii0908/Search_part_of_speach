@@ -1,4 +1,4 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <conio.h>
 #include <windows.h>
@@ -8,13 +8,13 @@
 
 using namespace std;
 
-// Определение констант для клавиш
-const char ESCAPE = 27;   // Клавиша ESC
-const char ENTER = 13;    // Клавиша Enter
-const char BSPACE = 8;    // Клавиша Backspace
+// РћРїСЂРµРґРµР»РµРЅРёРµ РєРѕРЅСЃС‚Р°РЅС‚ РґР»СЏ РєР»Р°РІРёС€
+const char ESCAPE = 27;   // РљР»Р°РІРёС€Р° ESC
+const char ENTER = 13;    // РљР»Р°РІРёС€Р° Enter
+const char BSPACE = 8;    // РљР»Р°РІРёС€Р° Backspace
 
-const string intro = "Это программа для распознавания дополнений в тексте.\n";
-const string menu_choose_file = "Выберете файл, из которого хотите считать. Предварительно файл должен быть загружен в папку с программой.\n-Для перемещения по пунктам используйте стрелки вверх/вниз\n-Для подтверждения выбора нажмите ENTER или стрелку вправо\n-Для выхода в главное меню нажмите ESCAPE или на стрелку влево\n\n";
+const string intro = "Р­С‚Рѕ РїСЂРѕРіСЂР°РјРјР° РґР»СЏ СЂР°СЃРїРѕР·РЅР°РІР°РЅРёСЏ РґРѕРїРѕР»РЅРµРЅРёР№ РІ С‚РµРєСЃС‚Рµ.\n";
+const string menu_choose_file = "Р’С‹Р±РµСЂРµС‚Рµ С„Р°Р№Р», РёР· РєРѕС‚РѕСЂРѕРіРѕ С…РѕС‚РёС‚Рµ СЃС‡РёС‚Р°С‚СЊ. РџСЂРµРґРІР°СЂРёС‚РµР»СЊРЅРѕ С„Р°Р№Р» РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ Р·Р°РіСЂСѓР¶РµРЅ РІ РїР°РїРєСѓ СЃ РїСЂРѕРіСЂР°РјРјРѕР№.\n-Р”Р»СЏ РїРµСЂРµРјРµС‰РµРЅРёСЏ РїРѕ РїСѓРЅРєС‚Р°Рј РёСЃРїРѕР»СЊР·СѓР№С‚Рµ СЃС‚СЂРµР»РєРё РІРІРµСЂС…/РІРЅРёР·\n-Р”Р»СЏ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ РІС‹Р±РѕСЂР° РЅР°Р¶РјРёС‚Рµ ENTER РёР»Рё СЃС‚СЂРµР»РєСѓ РІРїСЂР°РІРѕ\n-Р”Р»СЏ РІС‹С…РѕРґР° РІ РіР»Р°РІРЅРѕРµ РјРµРЅСЋ РЅР°Р¶РјРёС‚Рµ ESCAPE РёР»Рё РЅР° СЃС‚СЂРµР»РєСѓ РІР»РµРІРѕ\n\n";
 
 struct STWord
 {
@@ -26,7 +26,7 @@ struct STWord
 struct Ending
 {
     string name;
-    //сущ|гл|прил(прич)|числ|мест|нар|деепр|предл
+    //СЃСѓС‰|РіР»|РїСЂРёР»(РїСЂРёС‡)|С‡РёСЃР»|РјРµСЃС‚|РЅР°СЂ|РґРµРµРїСЂ|РїСЂРµРґР»
     int prt_of_spch = 0b00000000;
     string face = "-";
     string number = "-";
@@ -36,12 +36,6 @@ struct Ending
     Ending* next_ptr;
 };
 
-struct Depolnenie
-{
-    string name;
-    Depolnenie *next_ptr;
-};
-
 STWord* main_ptr = nullptr;
 Ending* main_ending_ptr = nullptr;
 Ending* word_to_ending = nullptr;
@@ -49,50 +43,9 @@ Ending* main_prep = nullptr;
 Ending* main_particles = nullptr;
 Ending* main_pronoun = nullptr;
 Ending* main_numeral = nullptr;
-Depolnenie* main_dep;
 
 
 bool test_file_open = false;
-
-void AddDepolnenie(Ending *word)
-{
-    Depolnenie *ins_dep;
-    Depolnenie *ptr;
-    ins_dep = new Depolnenie;
-    ins_dep->name = word->name;
-    ins_dep->next_ptr = nullptr;
-    if (main_dep != nullptr)
-    {
-        ptr = main_dep;
-        while (ptr->next_ptr != nullptr)
-        {
-            ptr = ptr->next_ptr;
-        }
-        ptr->next_ptr = ins_dep;
-    }
-    else
-        main_dep = ins_dep;
-}
-
-void CheckDepolnenie()
-{
-    Ending *cur_word = word_to_ending;
-    while(cur_word != nullptr)
-    {
-        if(cur_word->padezh == "нип")
-        {
-            //cout<<cur_word->padezh;
-            if(cur_word->pred_ptr != nullptr)
-            {
-                if(cur_word->pred_ptr->prt_of_spch == 0b00000001 && cur_word->pred_ptr->padezh == "доп")
-                {
-                    AddDepolnenie(cur_word);
-                }
-            }
-        }
-        cur_word = cur_word->next_ptr;
-    }
-}
 
 void add_ending(Ending*& cur_ptr, string name, int prt_of_spch, string face, string number, string time, string padezh)
 {
@@ -131,8 +84,8 @@ void check_endings()
     ifstream file_preposition;
     string ending;
 
-    file_ending.open("окончания.txt");
-    file_preposition.open("предлоги.txt");
+    file_ending.open("РѕРєРѕРЅС‡Р°РЅРёСЏ.txt");
+    file_preposition.open("РїСЂРµРґР»РѕРіРё.txt");
 */
     STWord* word_ptr = main_ptr;
     Ending* cur_end = main_ending_ptr;
@@ -153,7 +106,7 @@ void check_endings()
             {
                 if (max_size <= cur_size) {
                     if (!found_spch) {
-                        //cout << word_ptr->word << " по окончанию " << cur_end->name << endl;
+                        //cout << word_ptr->word << " РїРѕ РѕРєРѕРЅС‡Р°РЅРёСЋ " << cur_end->name << endl;
                         add_ending(word_to_ending, word_ptr->word, cur_end->prt_of_spch, cur_end->face, cur_end->number, cur_end->time, cur_end->padezh);
                         found_spch = true;
                         max_size = cur_size;
@@ -195,14 +148,14 @@ string to_lower_case(string str) {
     string result = str;
 
     for (char& c : result) {
-        // Русские заглавные буквы
-        if (c >= 'А' && c <= 'Я') {
-            c = c + 32; // Преобразуем в строчные
+        // Р СѓСЃСЃРєРёРµ Р·Р°РіР»Р°РІРЅС‹Рµ Р±СѓРєРІС‹
+        if (c >= 'Рђ' && c <= 'РЇ') {
+            c = c + 32; // РџСЂРµРѕР±СЂР°Р·СѓРµРј РІ СЃС‚СЂРѕС‡РЅС‹Рµ
         }
-        else if (c == 'Ё') {
-            c = 'ё';
+        else if (c == 'РЃ') {
+            c = 'С‘';
         }
-        // Английские и другие символы
+        // РђРЅРіР»РёР№СЃРєРёРµ Рё РґСЂСѓРіРёРµ СЃРёРјРІРѕР»С‹
         else if (c >= 'A' && c <= 'Z') {
             c = c + 32;
         }
@@ -210,22 +163,20 @@ string to_lower_case(string str) {
     return result;
 }
 
-void free_node(Ending* node_to_delete) {
-    if (node_to_delete == nullptr) return;
-
-    // Обновляем связи соседних узлов
-    if (node_to_delete->pred_ptr != nullptr) {
-        node_to_delete->pred_ptr->next_ptr = node_to_delete->next_ptr;
+void free_node(Ending* word_ptr) {
+    Ending* temp_ptr = word_ptr->next_ptr;
+    if (word_ptr->next_ptr->next_ptr != nullptr) {
+        word_ptr->next_ptr->next_ptr->pred_ptr = word_ptr->next_ptr->pred_ptr;
+        word_ptr->next_ptr = word_ptr->next_ptr->next_ptr;
     }
-    if (node_to_delete->next_ptr != nullptr) {
-        node_to_delete->next_ptr->pred_ptr = node_to_delete->pred_ptr;
+    else {
+        word_ptr->next_ptr = nullptr;
     }
-
-    delete node_to_delete;
+    delete temp_ptr;
 }
 
 void check_prep() {
-    //Максимальное количество слов в союзе - 5
+    //РњР°РєСЃРёРјР°Р»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ СЃР»РѕРІ РІ СЃРѕСЋР·Рµ - 5
     Ending* word_ptr = word_to_ending;
     Ending* cur_prep = main_prep;
     while (word_ptr != nullptr)
@@ -282,7 +233,7 @@ void check_prep() {
     {
         if (word_ptr->prt_of_spch == 0b00000001 and word_ptr->next_ptr != nullptr and word_ptr->next_ptr->prt_of_spch == 0b00000001) {
             word_ptr->name = word_ptr->name + "_" + word_ptr->next_ptr->name;
-            free_node(word_ptr->next_ptr);
+            free_node(word_ptr);
             continue;
         }
         word_ptr = word_ptr->next_ptr;
@@ -290,22 +241,17 @@ void check_prep() {
 }
 
 void check_particles() {
-    //Максимальное количество слов в союзе - 5
+    //РњР°РєСЃРёРјР°Р»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ СЃР»РѕРІ РІ СЃРѕСЋР·Рµ - 5
     Ending* word_ptr = word_to_ending;
     Ending* cur_particle = main_particles;
-    Ending* loc_ptr;
     while (word_ptr != nullptr)
     {
         while (cur_particle != nullptr)
         {
-            if (word_ptr->name == cur_particle->name)
-            {
-                if(word_ptr == word_to_ending)
-                    word_to_ending = word_ptr->next_ptr;
-                loc_ptr = word_ptr;
+            if (word_ptr->name == cur_particle->name) {
+                free_node(word_ptr->pred_ptr);
                 word_ptr = word_ptr->next_ptr;
-                free_node(loc_ptr);
-                //break;
+                break;
             }
             string compound_word = "";
             Ending* compound_ptr = word_ptr;
@@ -315,14 +261,8 @@ void check_particles() {
                 compound_word += compound_ptr->name;
                 if (compound_word == cur_particle->name) {
                     compound_ptr = word_ptr;
-                    for (int j = 0; j < i + 1; j++)
-                    {
-                        if(word_ptr == word_to_ending)
-                            word_to_ending = word_ptr->next_ptr;
-                        loc_ptr = word_ptr;
-                        word_ptr = word_ptr->next_ptr;
-                        free_node(word_ptr);
-
+                    for (int j = 0; j < i + 1; j++) {
+                        free_node(word_ptr->pred_ptr);
                     }
                     word_ptr = compound_ptr;
                     is_found = true;
@@ -385,29 +325,15 @@ void check_numaral() {
 }
 
 void delete_adj() {
-    Ending* current = word_to_ending;
-    Ending* to_delete = nullptr;
-    while (current != nullptr) {
-        Ending* next = current->next_ptr;
-        if (current->prt_of_spch == 0b00100000) {
-            to_delete = current;
-
-            // Обновляем связи
-            if (current->pred_ptr != nullptr) {
-                current->pred_ptr->next_ptr = current->next_ptr;
-            }
-            else {
-                word_to_ending = current->next_ptr;
-            }
-
-            if (current->next_ptr != nullptr) {
-                current->next_ptr->pred_ptr = current->pred_ptr;
-            }
-
-            delete to_delete;
+    Ending* word_ptr = word_to_ending;
+    while (word_ptr != nullptr)
+    {
+        if (word_ptr->prt_of_spch == 0b00100000) {
+            free_node(word_ptr->pred_ptr);
+            word_ptr = word_ptr->next_ptr;
+            break;
         }
-
-        current = next;
+        word_ptr = word_ptr->next_ptr;
     }
 }
 
@@ -415,24 +341,12 @@ void Output()
 {
     STWord* ins_word;
     ins_word = main_ptr;
-    Depolnenie *ins_dep = main_dep;
     while (ins_word != nullptr)
     {
         cout << ins_word->word << endl;
         ins_word = ins_word->next_ptr;
     }
-    cout << endl<<endl;
-    if(main_dep != nullptr)
-    {
-        cout<<"Дополнения\n";
-        while (ins_dep != nullptr)
-        {
-            cout << ins_dep->name << endl;
-            ins_dep = ins_dep->next_ptr;
-        }
-        cout << endl<<endl;
-    }
-
+    cout << endl;
 }
 
 void free_struct_stword()
@@ -494,13 +408,13 @@ void LoadWord(string word)
 
 void out_ending()
 {
-    ofstream out;          // поток для записи
+    ofstream out;          // РїРѕС‚РѕРє РґР»СЏ Р·Р°РїРёСЃРё
     if (test_file_open == false) {
-        out.open("test.txt", ios::out);      // открываем файл для записи
+        out.open("test.txt", ios::out);      // РѕС‚РєСЂС‹РІР°РµРј С„Р°Р№Р» РґР»СЏ Р·Р°РїРёСЃРё
         test_file_open = true;
     }
     else
-        out.open("test.txt", ios::app);      // открываем файл для записи
+        out.open("test.txt", ios::app);      // РѕС‚РєСЂС‹РІР°РµРј С„Р°Р№Р» РґР»СЏ Р·Р°РїРёСЃРё
     if (out.is_open())
     {
         Ending* ins_word;
@@ -521,19 +435,19 @@ void out_ending()
 //    fin.open(filename, ios::ate);
 //    if (!fin.is_open()) {
 //        system("cls");
-//        cout << "Ошибка! Файл не открыт. Выберите другой файл\n";
+//        cout << "РћС€РёР±РєР°! Р¤Р°Р№Р» РЅРµ РѕС‚РєСЂС‹С‚. Р’С‹Р±РµСЂРёС‚Рµ РґСЂСѓРіРѕР№ С„Р°Р№Р»\n";
 //        system("pause");
 //        return;
 //    }
-//    else if (fin.tellg() == 0) {  //проверка файла на пустоту
+//    else if (fin.tellg() == 0) {  //РїСЂРѕРІРµСЂРєР° С„Р°Р№Р»Р° РЅР° РїСѓСЃС‚РѕС‚Сѓ
 //        system("cls");
 //        fin.close();
-//        cout << "Файл пуст! Выберите другой файл\n";
+//        cout << "Р¤Р°Р№Р» РїСѓСЃС‚! Р’С‹Р±РµСЂРёС‚Рµ РґСЂСѓРіРѕР№ С„Р°Р№Р»\n";
 //        system("pause");
 //        return;
 //    }
 //    else {
-//        fin.seekg(0, ios::beg);     //перемещение указателя в начало файла
+//        fin.seekg(0, ios::beg);     //РїРµСЂРµРјРµС‰РµРЅРёРµ СѓРєР°Р·Р°С‚РµР»СЏ РІ РЅР°С‡Р°Р»Рѕ С„Р°Р№Р»Р°
 //    }
 //    int i = 1;
 //    cout << i << endl;
@@ -555,8 +469,8 @@ void out_ending()
 //            if ((keyword[keyword.length() - 1] == '.') || (keyword[keyword.length() - 1] == '?') || (keyword[keyword.length() - 1] == '!'))
 //            {
 //                Output();
-//                //Search();   //здесь запускается функция, которая будет обрабатывать предложение
-//                FreeStruck();   //функция очистки структуры (предложение мы типа обработали и больше не нужно)
+//                //Search();   //Р·РґРµСЃСЊ Р·Р°РїСѓСЃРєР°РµС‚СЃСЏ С„СѓРЅРєС†РёСЏ, РєРѕС‚РѕСЂР°СЏ Р±СѓРґРµС‚ РѕР±СЂР°Р±Р°С‚С‹РІР°С‚СЊ РїСЂРµРґР»РѕР¶РµРЅРёРµ
+//                FreeStruck();   //С„СѓРЅРєС†РёСЏ РѕС‡РёСЃС‚РєРё СЃС‚СЂСѓРєС‚СѓСЂС‹ (РїСЂРµРґР»РѕР¶РµРЅРёРµ РјС‹ С‚РёРїР° РѕР±СЂР°Р±РѕС‚Р°Р»Рё Рё Р±РѕР»СЊС€Рµ РЅРµ РЅСѓР¶РЅРѕ)
 //                i++;
 //                cout << i << endl;
 //                if (!containsNewline && iss.peek() != EOF)
@@ -577,7 +491,7 @@ void out_ending()
 void DevideSentence(string filename) {
     ifstream fin(filename);
     if (!fin.is_open()) {
-        cout << "Ошибка открытия файла!\n";
+        cout << "РћС€РёР±РєР° РѕС‚РєСЂС‹С‚РёСЏ С„Р°Р№Р»Р°!\n";
         system("pause");
         return;
     }
@@ -587,7 +501,7 @@ void DevideSentence(string filename) {
     bool has_words_in_sentence = false;
 
     while (getline(fin, line)) {
-        // Заменяем все лишние знаки препинания на пробелы
+        // Р—Р°РјРµРЅСЏРµРј РІСЃРµ Р»РёС€РЅРёРµ Р·РЅР°РєРё РїСЂРµРїРёРЅР°РЅРёСЏ РЅР° РїСЂРѕР±РµР»С‹
         for (char& c : line) {
             if (ispunct(c) && c != '.' && c != '?' && c != '!') {
                 c = ' ';
@@ -598,56 +512,54 @@ void DevideSentence(string filename) {
         string word;
 
         while (iss >> word) {
-            // Проверяем, заканчивается ли слово на .!?
+            // РџСЂРѕРІРµСЂСЏРµРј, Р·Р°РєР°РЅС‡РёРІР°РµС‚СЃСЏ Р»Рё СЃР»РѕРІРѕ РЅР° .!?
             if (!word.empty() && (word.back() == '.' || word.back() == '?' || word.back() == '!')) {
-                // Убираем знак препинания
+                // РЈР±РёСЂР°РµРј Р·РЅР°Рє РїСЂРµРїРёРЅР°РЅРёСЏ
                 string clean_word = word.substr(0, word.length() - 1);
 
-                // Добавляем слово только если оно не пустое
+                // Р”РѕР±Р°РІР»СЏРµРј СЃР»РѕРІРѕ С‚РѕР»СЊРєРѕ РµСЃР»Рё РѕРЅРѕ РЅРµ РїСѓСЃС‚РѕРµ
                 if (!clean_word.empty()) {
                     LoadWord(clean_word);
                     has_words_in_sentence = true;
                 }
 
-                // Обрабатываем предложение только если в нем были слова
+                // РћР±СЂР°Р±Р°С‚С‹РІР°РµРј РїСЂРµРґР»РѕР¶РµРЅРёРµ С‚РѕР»СЊРєРѕ РµСЃР»Рё РІ РЅРµРј Р±С‹Р»Рё СЃР»РѕРІР°
                 if (has_words_in_sentence) {
+                    Output();
                     check_endings();
                     check_particles();
                     check_prep();
                     check_pronoun();
                     check_numaral();
-                    delete_adj();
-                    CheckDepolnenie();
-                    Output();
+                    //delete_adj();
                     out_ending();
                     free_struct_stword();
                     free_struct_endings(word_to_ending);
-                    cout << "Обработка предложения " << sentence_number++ << endl;
+                    cout << "РћР±СЂР°Р±РѕС‚РєР° РїСЂРµРґР»РѕР¶РµРЅРёСЏ " << sentence_number++ << endl;
                     has_words_in_sentence = false;
                 }
             }
             else {
-                // Обычное слово без знаков конца предложения
+                // РћР±С‹С‡РЅРѕРµ СЃР»РѕРІРѕ Р±РµР· Р·РЅР°РєРѕРІ РєРѕРЅС†Р° РїСЂРµРґР»РѕР¶РµРЅРёСЏ
                 LoadWord(word);
                 has_words_in_sentence = true;
             }
         }
     }
 
-    // Обработка последнего предложения если оно осталось
+    // РћР±СЂР°Р±РѕС‚РєР° РїРѕСЃР»РµРґРЅРµРіРѕ РїСЂРµРґР»РѕР¶РµРЅРёСЏ РµСЃР»Рё РѕРЅРѕ РѕСЃС‚Р°Р»РѕСЃСЊ
     if (has_words_in_sentence) {
+        Output();
         check_endings();
         check_particles();
         check_prep();
         check_pronoun();
         check_numaral();
-        delete_adj();
-        CheckDepolnenie();
-        Output();
+        //delete_adj();
         out_ending();
         free_struct_stword();
         free_struct_endings(word_to_ending);
-        cout << "Обработка предложения " << sentence_number << endl;
+        cout << "РћР±СЂР°Р±РѕС‚РєР° РїСЂРµРґР»РѕР¶РµРЅРёСЏ " << sentence_number << endl;
     }
 
     fin.close();
@@ -655,13 +567,13 @@ void DevideSentence(string filename) {
     system("pause");
 }
 
-string WriteFilename() {                 //функция записи названия файла
+string WriteFilename() {                 //С„СѓРЅРєС†РёСЏ Р·Р°РїРёСЃРё РЅР°Р·РІР°РЅРёСЏ С„Р°Р№Р»Р°
     string filename;
-    bool inputComplete = false;         //флаг завершения записи
+    bool inputComplete = false;         //С„Р»Р°Рі Р·Р°РІРµСЂС€РµРЅРёСЏ Р·Р°РїРёСЃРё
     while (!inputComplete) {
         char ch = _getch();
         if (ch == 27)
-            return "";         //в случае нажатия esc - пустая строка
+            return "";         //РІ СЃР»СѓС‡Р°Рµ РЅР°Р¶Р°С‚РёСЏ esc - РїСѓСЃС‚Р°СЏ СЃС‚СЂРѕРєР°
         else if (ch == 13)
         {
             if (!filename.empty())
@@ -670,14 +582,14 @@ string WriteFilename() {                 //функция записи названия файла
                 inputComplete = true;
             }
         }
-        else if (ch == 8) {               //удаление символа при нажатии backspace
+        else if (ch == 8) {               //СѓРґР°Р»РµРЅРёРµ СЃРёРјРІРѕР»Р° РїСЂРё РЅР°Р¶Р°С‚РёРё backspace
             if (!filename.empty())
             {
                 filename.pop_back();
                 cout << "\b \b";
             }
         }
-        else if (((ch >= 'а' && ch <= 'я') || (ch >= 'А' && ch <= 'Я') || ch == 'Ё' || ch == 'ё' || ch == ' ' || ch == '.' || ch == '-' || isalpha(ch) || isalnum(ch)) == 1)
+        else if (((ch >= 'Р°' && ch <= 'СЏ') || (ch >= 'Рђ' && ch <= 'РЇ') || ch == 'РЃ' || ch == 'С‘' || ch == ' ' || ch == '.' || ch == '-' || isalpha(ch) || isalnum(ch)) == 1)
         {
             filename += ch;
             cout << ch;
@@ -686,43 +598,43 @@ string WriteFilename() {                 //функция записи названия файла
     return filename;
 }
 
-// Функция для отображения меню с выделенным текущим пунктом
+// Р¤СѓРЅРєС†РёСЏ РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ РјРµРЅСЋ СЃ РІС‹РґРµР»РµРЅРЅС‹Рј С‚РµРєСѓС‰РёРј РїСѓРЅРєС‚РѕРј
 void move_arr(int position, string items[], int size_items, string text) {
-    system("cls");  // Очистка экрана
-    cout << text;   // Вывод текста меню
+    system("cls");  // РћС‡РёСЃС‚РєР° СЌРєСЂР°РЅР°
+    cout << text;   // Р’С‹РІРѕРґ С‚РµРєСЃС‚Р° РјРµРЅСЋ
     for (int i = 0; i < size_items; i++) {
         if (i == position)
-            cout << " " << char(155) << char(155) << "  ";  // Выделение текущего пункта
+            cout << " " << char(155) << char(155) << "  ";  // Р’С‹РґРµР»РµРЅРёРµ С‚РµРєСѓС‰РµРіРѕ РїСѓРЅРєС‚Р°
         else
             cout << "   ";
-        cout << items[i] << '\n';  // Вывод пункта меню
+        cout << items[i] << '\n';  // Р’С‹РІРѕРґ РїСѓРЅРєС‚Р° РјРµРЅСЋ
     }
 }
 
-// Функция для навигации по меню с помощью клавиш
+// Р¤СѓРЅРєС†РёСЏ РґР»СЏ РЅР°РІРёРіР°С†РёРё РїРѕ РјРµРЅСЋ СЃ РїРѕРјРѕС‰СЊСЋ РєР»Р°РІРёС€
 int dynamic_menu(int& position, string items[], int size_items, string text) {
     char symbol;
-    move_arr(position, items, size_items, text);  // Первоначальное отображение меню
+    move_arr(position, items, size_items, text);  // РџРµСЂРІРѕРЅР°С‡Р°Р»СЊРЅРѕРµ РѕС‚РѕР±СЂР°Р¶РµРЅРёРµ РјРµРЅСЋ
     if (items == NULL) {
-        cout << "\nФайлы не найдены. Добавьте файл(-ы) в папку с программой.\n";
+        cout << "\nР¤Р°Р№Р»С‹ РЅРµ РЅР°Р№РґРµРЅС‹. Р”РѕР±Р°РІСЊС‚Рµ С„Р°Р№Р»(-С‹) РІ РїР°РїРєСѓ СЃ РїСЂРѕРіСЂР°РјРјРѕР№.\n";
         system("pause");
         system("cls");
         return -1;
     }
     do {
-        symbol = _getch();  // Получение нажатой клавиши
+        symbol = _getch();  // РџРѕР»СѓС‡РµРЅРёРµ РЅР°Р¶Р°С‚РѕР№ РєР»Р°РІРёС€Рё
         if (symbol == ENTER) {
             move_arr(position, items, size_items, text);
             return 0;
         }
         if (symbol == ESCAPE) {
-            position = -2;  // Выход из меню
+            position = -2;  // Р’С‹С…РѕРґ РёР· РјРµРЅСЋ
             return 0;
         }
-        if (symbol == -32 && _kbhit()) {  // Обработка стрелок
+        if (symbol == -32 && _kbhit()) {  // РћР±СЂР°Р±РѕС‚РєР° СЃС‚СЂРµР»РѕРє
             char sub_symbol;
             sub_symbol = _getch();
-            if (sub_symbol == 72) {  // Стрелка вверх
+            if (sub_symbol == 72) {  // РЎС‚СЂРµР»РєР° РІРІРµСЂС…
                 if (position > 0) {
                     position--;
                     move_arr(position, items, size_items, text);
@@ -733,7 +645,7 @@ int dynamic_menu(int& position, string items[], int size_items, string text) {
                 }
 
             }
-            if (sub_symbol == 80) {  // Стрелка вниз
+            if (sub_symbol == 80) {  // РЎС‚СЂРµР»РєР° РІРЅРёР·
                 if (position < size_items - 1) {
                     position++;
                     move_arr(position, items, size_items, text);
@@ -743,11 +655,11 @@ int dynamic_menu(int& position, string items[], int size_items, string text) {
                     move_arr(position, items, size_items, text);
                 }
             }
-            if (sub_symbol == 75) {  // Стрелка влево
+            if (sub_symbol == 75) {  // РЎС‚СЂРµР»РєР° РІР»РµРІРѕ
                 position = -1;
                 return 0;
             }
-            if (sub_symbol == 77) {  // Стрелка вправо
+            if (sub_symbol == 77) {  // РЎС‚СЂРµР»РєР° РІРїСЂР°РІРѕ
                 move_arr(position, items, size_items, text);
                 return 0;
             }
@@ -755,26 +667,26 @@ int dynamic_menu(int& position, string items[], int size_items, string text) {
     } while (symbol != ENTER);
 }
 
-// Меню Да/Нет
+// РњРµРЅСЋ Р”Р°/РќРµС‚
 int no_or_yes(string menu) {
-    string list[2] = { "Нет", "Да" };
+    string list[2] = { "РќРµС‚", "Р”Р°" };
     int position = 0;
     system("cls");
     dynamic_menu(position, list, size(list), menu);
     return position;
 }
 
-// Получает список txt-файлов в указанной папке
+// РџРѕР»СѓС‡Р°РµС‚ СЃРїРёСЃРѕРє txt-С„Р°Р№Р»РѕРІ РІ СѓРєР°Р·Р°РЅРЅРѕР№ РїР°РїРєРµ
 string* list_files(const string& folder_path, int& num_files) {
     WIN32_FIND_DATAA file_data;
     HANDLE h_find = FindFirstFileA((folder_path + "\\*.txt").c_str(), &file_data);
 
     if (h_find == INVALID_HANDLE_VALUE) {
         num_files = 0;
-        return nullptr; // Папка пуста или не существует
+        return nullptr; // РџР°РїРєР° РїСѓСЃС‚Р° РёР»Рё РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚
     }
 
-    // Первый проход: подсчёт количества файлов
+    // РџРµСЂРІС‹Р№ РїСЂРѕС…РѕРґ: РїРѕРґСЃС‡С‘С‚ РєРѕР»РёС‡РµСЃС‚РІР° С„Р°Р№Р»РѕРІ
     num_files = 0;
     do {
         if (!(file_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
@@ -782,10 +694,10 @@ string* list_files(const string& folder_path, int& num_files) {
         }
     } while (FindNextFileA(h_find, &file_data));
 
-    // Выделяем массив под имена файлов
+    // Р’С‹РґРµР»СЏРµРј РјР°СЃСЃРёРІ РїРѕРґ РёРјРµРЅР° С„Р°Р№Р»РѕРІ
     string* file_names = new string[num_files];
 
-    // Второй проход: заполнение массива (перезапускаем поиск)
+    // Р’С‚РѕСЂРѕР№ РїСЂРѕС…РѕРґ: Р·Р°РїРѕР»РЅРµРЅРёРµ РјР°СЃСЃРёРІР° (РїРµСЂРµР·Р°РїСѓСЃРєР°РµРј РїРѕРёСЃРє)
     FindClose(h_find);
     h_find = FindFirstFileA((folder_path + "\\*.txt").c_str(), &file_data);
 
@@ -800,20 +712,20 @@ string* list_files(const string& folder_path, int& num_files) {
     return file_names;
 }
 
-// Получает путь к директории, где находится программа
+// РџРѕР»СѓС‡Р°РµС‚ РїСѓС‚СЊ Рє РґРёСЂРµРєС‚РѕСЂРёРё, РіРґРµ РЅР°С…РѕРґРёС‚СЃСЏ РїСЂРѕРіСЂР°РјРјР°
 string get_program_dir() {
     char buffer[MAX_PATH];
-    GetModuleFileNameA(NULL, buffer, MAX_PATH);  // Получаем полный путь к исполняемому файлу
+    GetModuleFileNameA(NULL, buffer, MAX_PATH);  // РџРѕР»СѓС‡Р°РµРј РїРѕР»РЅС‹Р№ РїСѓС‚СЊ Рє РёСЃРїРѕР»РЅСЏРµРјРѕРјСѓ С„Р°Р№Р»Сѓ
     string exe_path = buffer;
-    return exe_path.substr(0, exe_path.find_last_of("\\/"));  // Возвращаем только директорию
+    return exe_path.substr(0, exe_path.find_last_of("\\/"));  // Р’РѕР·РІСЂР°С‰Р°РµРј С‚РѕР»СЊРєРѕ РґРёСЂРµРєС‚РѕСЂРёСЋ
 }
 
 bool parser_endings() {
     string line;
-    ifstream endings("Окончания.txt"); // окрываем файл окончаний
+    ifstream endings("РћРєРѕРЅС‡Р°РЅРёСЏ.txt"); // РѕРєСЂС‹РІР°РµРј С„Р°Р№Р» РѕРєРѕРЅС‡Р°РЅРёР№
     if (endings.is_open()) {
         while (getline(endings, line)) {
-            if (line == "прил:") {
+            if (line == "РїСЂРёР»:") {
                 while (line != "/") {
                     getline(endings, line);
                     if (line == "/")
@@ -821,7 +733,7 @@ bool parser_endings() {
                     add_ending(main_ending_ptr, line, 0b00100000, "-", "-", "-", "-");
                 }
             }
-            if (line == "гл:") {
+            if (line == "РіР»:") {
                 string word;
                 endings >> word;
                 string list[9];
@@ -842,7 +754,7 @@ bool parser_endings() {
                     endings >> word;
                 }
             }
-            if (line == "деепр:") {
+            if (line == "РґРµРµРїСЂ:") {
                 string word;
                 endings >> word;
                 string list[5];
@@ -861,7 +773,7 @@ bool parser_endings() {
                     endings >> word;
                 }
             }
-            if (line == "нар:") {
+            if (line == "РЅР°СЂ:") {
                 while (line != "/") {
                     getline(endings, line);
                     if (line == "/")
@@ -869,7 +781,7 @@ bool parser_endings() {
                     add_ending(main_ending_ptr, line, 0b00000100, "-", "-", "-", "-");
                 }
             }
-            /*if (line == "числ:") {
+            /*if (line == "С‡РёСЃР»:") {
                 string word;
                 endings >> word;
                 string list[8];
@@ -888,7 +800,7 @@ bool parser_endings() {
                     endings >> word;
                 }
             }*/
-            /*if (line == "мест:") {
+            /*if (line == "РјРµСЃС‚:") {
                 string word;
                 endings >> word;
                 string list[6];
@@ -907,7 +819,7 @@ bool parser_endings() {
                     endings >> word;
                 }
             }*/
-            if (line == "сущ:") {
+            if (line == "СЃСѓС‰:") {
                 while (line != "/") {
                     getline(endings, line);
                     if (line == "/")
@@ -920,13 +832,13 @@ bool parser_endings() {
     }
     else
         return 0;
-    endings.close();     // закрываем файл
+    endings.close();     // Р·Р°РєСЂС‹РІР°РµРј С„Р°Р№Р»
     return 1;
 }
 
 bool parser_prep() {
     string line;
-    ifstream prep("Предлоги.txt"); // окрываем файл окончаний
+    ifstream prep("РџСЂРµРґР»РѕРіРё.txt"); // РѕРєСЂС‹РІР°РµРј С„Р°Р№Р» РѕРєРѕРЅС‡Р°РЅРёР№
     if (prep.is_open()) {
         while (getline(prep, line)) {
             string member;
@@ -936,13 +848,13 @@ bool parser_prep() {
     }
     else
         return 0;
-    prep.close();     // закрываем файл
+    prep.close();     // Р·Р°РєСЂС‹РІР°РµРј С„Р°Р№Р»
     return 1;
 }
 
 bool parser_particles() {
     string line;
-    ifstream particle("Союзы, частицы, междометия.txt"); // окрываем файл окончаний
+    ifstream particle("РЎРѕСЋР·С‹, С‡Р°СЃС‚РёС†С‹, РјРµР¶РґРѕРјРµС‚РёСЏ.txt"); // РѕРєСЂС‹РІР°РµРј С„Р°Р№Р» РѕРєРѕРЅС‡Р°РЅРёР№
     if (particle.is_open()) {
         while (getline(particle, line)) {
             add_ending(main_particles, line, 0b00000000, "-", "-", "-", "-");
@@ -950,13 +862,13 @@ bool parser_particles() {
     }
     else
         return 0;
-    particle.close();     // закрываем файл
+    particle.close();     // Р·Р°РєСЂС‹РІР°РµРј С„Р°Р№Р»
     return 1;
 }
 
 bool parser_pronoun() {
     string line;
-    ifstream pronoun("Местоимения.txt"); // окрываем файл окончаний
+    ifstream pronoun("РњРµСЃС‚РѕРёРјРµРЅРёСЏ.txt"); // РѕРєСЂС‹РІР°РµРј С„Р°Р№Р» РѕРєРѕРЅС‡Р°РЅРёР№
     if (pronoun.is_open()) {
         while (getline(pronoun, line)) {
             string prt_of_spch;
@@ -966,13 +878,13 @@ bool parser_pronoun() {
     }
     else
         return 0;
-    pronoun.close();     // закрываем файл
+    pronoun.close();     // Р·Р°РєСЂС‹РІР°РµРј С„Р°Р№Р»
     return 1;
 }
 
 bool parser_numeral() {
     string line;
-    ifstream numeral("Числительные.txt"); // окрываем файл окончаний
+    ifstream numeral("Р§РёСЃР»РёС‚РµР»СЊРЅС‹Рµ.txt"); // РѕРєСЂС‹РІР°РµРј С„Р°Р№Р» РѕРєРѕРЅС‡Р°РЅРёР№
     if (numeral.is_open()) {
         while (getline(numeral, line)) {
             string prt_of_spch;
@@ -982,7 +894,7 @@ bool parser_numeral() {
     }
     else
         return 0;
-    numeral.close();     // закрываем файл
+    numeral.close();     // Р·Р°РєСЂС‹РІР°РµРј С„Р°Р№Р»
     return 1;
 }
 
@@ -996,7 +908,7 @@ int main()
     int position = 0;
     while (!parser_endings() or !parser_prep() or !parser_particles() or !parser_pronoun() or !parser_numeral())
     {
-        cout << "Файлы правил не найдены, добавьте их в папку с программой, иначе невозможно продолжить работу программы.\n\n";
+        cout << "Р¤Р°Р№Р»С‹ РїСЂР°РІРёР» РЅРµ РЅР°Р№РґРµРЅС‹, РґРѕР±Р°РІСЊС‚Рµ РёС… РІ РїР°РїРєСѓ СЃ РїСЂРѕРіСЂР°РјРјРѕР№, РёРЅР°С‡Рµ РЅРµРІРѕР·РјРѕР¶РЅРѕ РїСЂРѕРґРѕР»Р¶РёС‚СЊ СЂР°Р±РѕС‚Сѓ РїСЂРѕРіСЂР°РјРјС‹.\n\n";
         system("pause");
         system("cls");
     }
@@ -1006,11 +918,11 @@ int main()
         string* file_names;
         int num_files;
 
-        // Получаем список txt-файлов в директории программы
+        // РџРѕР»СѓС‡Р°РµРј СЃРїРёСЃРѕРє txt-С„Р°Р№Р»РѕРІ РІ РґРёСЂРµРєС‚РѕСЂРёРё РїСЂРѕРіСЂР°РјРјС‹
         string program_dir = get_program_dir();
         file_names = list_files(program_dir, num_files);
 
-        // Пользователь выбирает файл
+        // РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РІС‹Р±РёСЂР°РµС‚ С„Р°Р№Р»
         int empty_list = dynamic_menu(position, file_names, num_files, menu_choose_file);
         if (empty_list == -1)
             continue;
@@ -1018,15 +930,15 @@ int main()
 
 
         if (position < 0) {
-            string out_confirm = "Вы точно хотите выйти из программы?\n";
-            if (no_or_yes(out_confirm) == 1)  // Подтверждение выхода
+            string out_confirm = "Р’С‹ С‚РѕС‡РЅРѕ С…РѕС‚РёС‚Рµ РІС‹Р№С‚Рё РёР· РїСЂРѕРіСЂР°РјРјС‹?\n";
+            if (no_or_yes(out_confirm) == 1)  // РџРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ РІС‹С…РѕРґР°
                 return 0;
             else
                 position = 0;
             continue;
         }
 
-        // Формируем полный путь к файлу
+        // Р¤РѕСЂРјРёСЂСѓРµРј РїРѕР»РЅС‹Р№ РїСѓС‚СЊ Рє С„Р°Р№Р»Сѓ
         program_dir = program_dir + "\\" + file_names[position];
         //program_dir = WriteFilename();
         /*if (program_dir == "")
@@ -1039,7 +951,7 @@ int main()
             DevideSentence(program_dir);*/
         DevideSentence(program_dir);
     }
-    /*cout<<"Введите название текстового файла\nНажмите клавишу esc для выхода\n";  //переформулировать
+    /*cout<<"Р’РІРµРґРёС‚Рµ РЅР°Р·РІР°РЅРёРµ С‚РµРєСЃС‚РѕРІРѕРіРѕ С„Р°Р№Р»Р°\nРќР°Р¶РјРёС‚Рµ РєР»Р°РІРёС€Сѓ esc РґР»СЏ РІС‹С…РѕРґР°\n";  //РїРµСЂРµС„РѕСЂРјСѓР»РёСЂРѕРІР°С‚СЊ
     bool exit = false;
     string filename;
     while(!exit)
