@@ -84,11 +84,21 @@ void CheckDepolnenie()
             //cout<<cur_word->padezh;
             if(cur_word->pred_ptr != nullptr)
             {
-                if(cur_word->pred_ptr->prt_of_spch == 0b00000001 && cur_word->pred_ptr->padezh == "доп")
+                if((cur_word->pred_ptr->prt_of_spch == 0b00000001 && cur_word->pred_ptr->padezh == "доп") || cur_word->pred_ptr->prt_of_spch != 0b00000001)
                 {
                     AddDepolnenie(cur_word);
                 }
             }
+        }
+        if(cur_word->prt_of_spch == 0b01000000 && cur_word->next_ptr != nullptr && cur_word->next_ptr->prt_of_spch & 0b10000000)
+        {
+            AddDepolnenie(cur_word->next_ptr);
+            cur_word = cur_word->next_ptr;
+        }
+        if(cur_word->prt_of_spch == 0b00010000 && cur_word->padezh == "нип" && cur_word->next_ptr != nullptr)   //следующее слово после числительного
+        {
+            AddDepolnenie(cur_word->next_ptr);
+            cur_word = cur_word->next_ptr;
         }
         cur_word = cur_word->next_ptr;
     }
