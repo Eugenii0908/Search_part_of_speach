@@ -77,9 +77,10 @@ void AddDepolnenie(Ending *word)
 void CheckDepolnenie()
 {
     Ending *cur_word = word_to_ending;
+    bool pred_dop = false;
     while(cur_word != nullptr)
     {
-        if(cur_word->padezh == "нип")
+        if(cur_word->padezh == "нип")       //когда точно известен падеж
         {
             //cout<<cur_word->padezh;
             if(cur_word->pred_ptr != nullptr)
@@ -87,18 +88,34 @@ void CheckDepolnenie()
                 if((cur_word->pred_ptr->prt_of_spch == 0b00000001 && cur_word->pred_ptr->padezh == "доп") || cur_word->pred_ptr->prt_of_spch != 0b00000001)
                 {
                     AddDepolnenie(cur_word);
+                    pred_dop = true;
                 }
             }
         }
-        if(cur_word->prt_of_spch == 0b01000000 && cur_word->next_ptr != nullptr && cur_word->next_ptr->prt_of_spch & 0b10000000)
+        else if((cur_word->prt_of_spch & 0b10000000) && cur_word->pred_ptr != nullptr && cur_word->pred_ptr->prt_of_spch == 0b00000001 && cur_word->pred_ptr->padezh == "доп")    //когда падежа нет, но есть предлог
         {
-            AddDepolnenie(cur_word->next_ptr);
-            cur_word = cur_word->next_ptr;
+            AddDepolnenie(cur_word);
+            pred_dop = true;
         }
-        if(cur_word->prt_of_spch == 0b00010000 && cur_word->padezh == "нип" && cur_word->next_ptr != nullptr)   //следующее слово после числительного
+        else if(cur_word->prt_of_spch == 0b01000000 && cur_word->next_ptr != nullptr && cur_word->next_ptr->prt_of_spch & 0b10000000)   //после глагола
+        {
+            AddDepolnenie(cur_word->next_ptr);
+            cur_word = cur_word->next_ptr;  //пропустить слово, чтоб 2 раза не записывать
+            pred_dop = true;
+        }
+        else if(cur_word->prt_of_spch == 0b00010000 && cur_word->padezh == "нип" && cur_word->next_ptr != nullptr)   //следующее слово после числительного
         {
             AddDepolnenie(cur_word->next_ptr);
             cur_word = cur_word->next_ptr;
+            pred_dop = true;
+        }
+        else if((cur_word->padezh == "нип" || cur_word->prt_of_spch & 0b10000000) && pred_dop)  //следующее слово после дополнения
+        {
+            AddDepolnenie(cur_word);
+        }
+        else
+        {
+            pred_dop = false;
         }
         cur_word = cur_word->next_ptr;
     }
@@ -462,6 +479,21 @@ void free_struct_stword()
 
 }
 
+void free_struct_depolnenie()
+{
+    Depolnenie *ins_word;
+    Depolnenie *loc_ptr;
+    ins_word = main_dep;
+    while (ins_word != nullptr)
+    {
+        loc_ptr = ins_word;
+        ins_word = ins_word->next_ptr;
+        loc_ptr->next_ptr = nullptr;
+        delete loc_ptr;
+    }
+    main_dep = nullptr;
+}
+
 void free_struct_endings(Ending*& cur_ptr)
 {
     Ending* ins_word;
@@ -632,6 +664,7 @@ void DevideSentence(string filename) {
                     out_ending();
                     free_struct_stword();
                     free_struct_endings(word_to_ending);
+                    free_struct_depolnenie();
                     cout << "Обработка предложения " << sentence_number++ << endl;
                     has_words_in_sentence = false;
                 }
@@ -657,6 +690,7 @@ void DevideSentence(string filename) {
         out_ending();
         free_struct_stword();
         free_struct_endings(word_to_ending);
+        free_struct_depolnenie();
         cout << "Обработка предложения " << sentence_number << endl;
     }
 
