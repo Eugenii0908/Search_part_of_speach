@@ -80,13 +80,6 @@ void add_ending(Ending*& cur_ptr, string name, int prt_of_spch, string face, str
 
 void check_endings()
 {
-    /*ifstream file_ending;
-    ifstream file_preposition;
-    string ending;
-
-    file_ending.open("окончания.txt");
-    file_preposition.open("предлоги.txt");
-*/
     STWord* word_ptr = main_ptr;
     Ending* cur_end = main_ending_ptr;
     while (word_ptr != nullptr)
@@ -428,66 +421,6 @@ void out_ending()
     out.close();
 }
 
-//void DevideSentence(string filename) {
-//    ifstream fin;
-//    string line;
-//    string keyword = "";
-//    fin.open(filename, ios::ate);
-//    if (!fin.is_open()) {
-//        system("cls");
-//        cout << "Ошибка! Файл не открыт. Выберите другой файл\n";
-//        system("pause");
-//        return;
-//    }
-//    else if (fin.tellg() == 0) {  //проверка файла на пустоту
-//        system("cls");
-//        fin.close();
-//        cout << "Файл пуст! Выберите другой файл\n";
-//        system("pause");
-//        return;
-//    }
-//    else {
-//        fin.seekg(0, ios::beg);     //перемещение указателя в начало файла
-//    }
-//    int i = 1;
-//    cout << i << endl;
-//    while (!fin.eof())
-//    {
-//        bool flag = false;
-//        getline(fin, line);
-//        if (keyword != "")
-//            line = keyword + ' ' + line;
-//        //cout<<line<<endl;
-//        istringstream iss(line);
-//        while (getline(iss, keyword, ' '))
-//        {
-//            bool containsNewline = (keyword.find('\n') != -1);
-//            if (keyword.empty())
-//                continue;
-//            //cout<<sentence<<endl;
-//            LoadWord(keyword);
-//            if ((keyword[keyword.length() - 1] == '.') || (keyword[keyword.length() - 1] == '?') || (keyword[keyword.length() - 1] == '!'))
-//            {
-//                Output();
-//                //Search();   //здесь запускается функция, которая будет обрабатывать предложение
-//                FreeStruck();   //функция очистки структуры (предложение мы типа обработали и больше не нужно)
-//                i++;
-//                cout << i << endl;
-//                if (!containsNewline && iss.peek() != EOF)
-//                    flag = true;
-//                break;
-//            }
-//        }
-//        if (flag)
-//        {
-//            getline(iss, keyword);
-//        }
-//        else
-//            keyword = "";
-//    }
-//    system("pause");
-//}
-
 void DevideSentence(string filename) {
     ifstream fin(filename);
     if (!fin.is_open()) {
@@ -555,7 +488,6 @@ void DevideSentence(string filename) {
         check_prep();
         check_pronoun();
         check_numaral();
-        //delete_adj();
         out_ending();
         free_struct_stword();
         free_struct_endings(word_to_ending);
@@ -781,44 +713,6 @@ bool parser_endings() {
                     add_ending(main_ending_ptr, line, 0b00000100, "-", "-", "-", "-");
                 }
             }
-            /*if (line == "числ:") {
-                string word;
-                endings >> word;
-                string list[8];
-                while (word != "/") {
-                    int i = 0;
-                    while (word != ";") {
-                        list[i] = word;
-                        endings >> word;
-                        i++;
-                    }
-                    string padezh;
-                    endings >> padezh;
-                    for (int j = 0; j < i; j++) {
-                        add_ending(main_ending_ptr, list[j], 0b00010000, "-", "-", "-", padezh);
-                    }
-                    endings >> word;
-                }
-            }*/
-            /*if (line == "мест:") {
-                string word;
-                endings >> word;
-                string list[6];
-                while (word != "/") {
-                    int i = 0;
-                    while (word != ";") {
-                        list[i] = word;
-                        endings >> word;
-                        i++;
-                    }
-                    string padezh;
-                    endings >> padezh;
-                    for (int j = 0; j < i; j++) {
-                        add_ending(main_ending_ptr, list[j], 0b00001000, "-", "-", "-", padezh);
-                    }
-                    endings >> word;
-                }
-            }*/
             if (line == "сущ:") {
                 while (line != "/") {
                     getline(endings, line);
@@ -828,7 +722,6 @@ bool parser_endings() {
                 }
             }
         }
-        //out_ending();
     }
     else
         return 0;
@@ -913,8 +806,6 @@ int main()
         system("cls");
     }
     while (position > -1) {
-        //system("pause");
-        //system("cls");
         string* file_names;
         int num_files;
 
@@ -940,31 +831,7 @@ int main()
 
         // Формируем полный путь к файлу
         program_dir = program_dir + "\\" + file_names[position];
-        //program_dir = WriteFilename();
-        /*if (program_dir == "")
-            break;
-        else if (program_dir.find(".txt") == -1) {
-            program_dir += ".txt";
-            DevideSentence(program_dir);
-        }
-        else
-            DevideSentence(program_dir);*/
         DevideSentence(program_dir);
     }
-    /*cout<<"Введите название текстового файла\nНажмите клавишу esc для выхода\n";  //переформулировать
-    bool exit = false;
-    string filename;
-    while(!exit)
-    {
-        filename = WriteFilename();
-        if(filename == "")
-            break;
-        else if(filename.find(".txt")==-1){
-            filename+=".txt";
-            DevideSentence(filename);
-        }
-        else
-            DevideSentence(filename);
-    }*/
     return 0;
 }
