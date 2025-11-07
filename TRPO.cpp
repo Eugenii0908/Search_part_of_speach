@@ -5,17 +5,22 @@
 #include <sstream>
 #include <string>
 #include <bitset>
+#include "interface_lib.h"
 
-using namespace std;
+//using namespace std;
+//
+//// Определение констант для клавиш
+//const char ESCAPE = 27;   // Клавиша ESC
+//const char ENTER = 13;    // Клавиша Enter
+//const char BSPACE = 8;    // Клавиша Backspace
 
-// Определение констант для клавиш
-const char ESCAPE = 27;   // Клавиша ESC
-const char ENTER = 13;    // Клавиша Enter
-const char BSPACE = 8;    // Клавиша Backspace
+// Тексты интерфейса
+const string intro = "Это программа для распознавания дополнений в тексте.\n-Для перемещения по пунктам используйте стрелки вверх/вниз\n"
+"-Для подтверждения выбора нажмите ENTER или стрелку вправо\n"
+"-Для выхода из программы нажмите на ESCAPE или стрелку влево\n\nДля продолжения нажмите на любую клавишу.";
+const string main_menu_text = "Файл должен находиться в папке с программой. Выберите файл, который хотите проанализировать:\n";
 
-const string intro = "Это программа для распознавания дополнений в тексте.\n";
-const string menu_choose_file = "Выберете файл, из которого хотите считать. Предварительно файл должен быть загружен в папку с программой.\n-Для перемещения по пунктам используйте стрелки вверх/вниз\n-Для подтверждения выбора нажмите ENTER или стрелку вправо\n-Для выхода в главное меню нажмите ESCAPE или на стрелку влево\n\n";
-
+// Структура для считывания текста с файла
 struct STWord
 {
     string word;
@@ -23,6 +28,7 @@ struct STWord
     STWord* next_ptr;
 };
 
+// Структура для обработки слов по каждому предложению
 struct Ending
 {
     string name;
@@ -36,17 +42,149 @@ struct Ending
     Ending* next_ptr;
 };
 
-STWord* main_ptr = nullptr;
-Ending* main_ending_ptr = nullptr;
-Ending* word_to_ending = nullptr;
-Ending* main_prep = nullptr;
-Ending* main_particles = nullptr;
-Ending* main_pronoun = nullptr;
-Ending* main_numeral = nullptr;
+// Структура дополнений 
+struct Depolnenie
+{
+    string name;
+    Depolnenie* next_ptr;
+};
 
+// Корень структуры слов текста
+STWord* main_ptr = nullptr;
+// Корень структуры окончаний
+Ending* main_ending_ptr = nullptr;
+// Корень структуры слов предложения, соотнесенных с окончаниями
+Ending* word_to_ending = nullptr;
+// Корень структуры предлогов
+Ending* main_prep = nullptr;
+// Корень структуры союзов, частиц и междометий
+Ending* main_particles = nullptr;
+// Корень структуры местоимений
+Ending* main_pronoun = nullptr;
+// Корень структуры числительных
+Ending* main_numeral = nullptr;
+// Корень структуры дополнений
+Depolnenie* main_dep;
 
 bool test_file_open = false;
 
+// Функция очистки элемента
+void free_node(Ending* node_to_delete) {
+    if (node_to_delete == nullptr) return;
+    
+    // Обновляем связи соседних узлов
+    if (node_to_delete->pred_ptr != nullptr) {
+        node_to_delete->pred_ptr->next_ptr = node_to_delete->next_ptr;
+    }
+    if (node_to_delete->next_ptr != nullptr) {
+        node_to_delete->next_ptr->pred_ptr = node_to_delete->pred_ptr;
+    }
+    delete node_to_delete;
+}
+
+// Функция добавления дополнений
+void AddDepolnenie(Ending* word)
+{
+    Depolnenie* ins_dep;
+    Depolnenie* ptr;
+    ins_dep = new Depolnenie;
+    ins_dep->name = word->name;
+    ins_dep->next_ptr = nullptr;
+    if (main_dep != nullptr)
+    {
+        ptr = main_dep;
+        while (ptr->next_ptr != nullptr)
+        {
+            ptr = ptr->next_ptr;
+        }
+        ptr->next_ptr = ins_dep;
+    }
+    else
+        main_dep = ins_dep;
+}
+
+// Функция проверки дополнений
+void CheckDepolnenie()
+{
+    Ending* cur_word = word_to_ending;
+    bool pred_dop = false;
+    while (cur_word != nullptr)
+    {
+        // Если местоимение или существительное и перед стоит предлог
+        if (((cur_word->prt_of_spch & 0b10000000) == 0b10000000) || ((cur_word->prt_of_spch & 0b00010000) == 0b00010000) || (((cur_word->prt_of_spch & 0b00001000) == 0b00001000) && cur_word->padezh == "нип"))
+        {
+            if (cur_word->pred_ptr != nullptr)
+            {
+                if (cur_word->pred_ptr->prt_of_spch == 0b00000001 && cur_word->pred_ptr->padezh == "доп")
+                {
+                    // Если есть вероятность, что наречие - пропускаем
+                    if ((cur_word->prt_of_spch & 0b00000100) == 0b00000100) {
+                        cur_word = cur_word->next_ptr;
+                        continue;
+                    }
+                    cur_word->name = cur_word->pred_ptr->name + " " + cur_word->name;
+                    AddDepolnenie(cur_word);
+                    //cout << cur_word->name;
+                    pred_dop = true;
+                    cur_word = cur_word->next_ptr;
+                    continue;
+                }
+            }
+        }
+        // Если падежа нет, но есть предлог
+        //else if ((cur_word->prt_of_spch & 0b10000000) && cur_word->pred_ptr != nullptr && cur_word->pred_ptr->prt_of_spch == 0b00000001 && cur_word->pred_ptr->padezh == "доп")
+        //{
+        //    cur_word->name = cur_word->pred_ptr->name + " " + cur_word->name;
+        //    AddDepolnenie(cur_word);
+        //    pred_dop = true;
+        //}
+        // После глагола
+        if (cur_word->prt_of_spch == 0b01000000 && cur_word->next_ptr != nullptr && (((cur_word->next_ptr->prt_of_spch & 0b10000000) == 0b10000000) || (((cur_word->next_ptr->prt_of_spch & 0b00001000) == 0b00001000) && cur_word->next_ptr->padezh == "нип")))
+        {
+            AddDepolnenie(cur_word->next_ptr);
+            //cout << cur_word->name;
+            cur_word = cur_word->next_ptr;  //пропустить слово, чтоб 2 раза не записывать
+            pred_dop = true;
+        }
+        // После числительного
+        else if (cur_word->prt_of_spch == 0b00010000 && cur_word->next_ptr != nullptr && (((cur_word->next_ptr->prt_of_spch & 0b10000000) == 0b10000000) || (((cur_word->next_ptr->prt_of_spch & 0b00001000) == 0b00001000) && cur_word->next_ptr->padezh == "нип")))
+        {
+            // Если дальше идет глагол - значит подлежащее
+            if (cur_word->next_ptr->next_ptr->prt_of_spch == 0b01000000) {
+                cur_word = cur_word->next_ptr;
+                continue;
+            }
+            cur_word->next_ptr->name = cur_word->name + " " + cur_word->next_ptr->name;
+            AddDepolnenie(cur_word->next_ptr);
+            //cout << cur_word->name;
+            cur_word = cur_word->next_ptr;
+            pred_dop = true;
+        }
+        // После деепричастия
+        else if (cur_word->prt_of_spch == 0b00000010 && cur_word->next_ptr != nullptr && (((cur_word->next_ptr->prt_of_spch & 0b10000000) == 0b10000000) || (((cur_word->next_ptr->prt_of_spch & 0b00001000) == 0b00001000) && cur_word->next_ptr->padezh == "нип")))
+        {
+            AddDepolnenie(cur_word->next_ptr);
+            //cout << cur_word->name;
+            cur_word = cur_word->next_ptr;  //пропустить слово, чтоб 2 раза не записывать
+            pred_dop = true;
+        }
+        // После дополнения
+        else if ((cur_word->padezh == "нип" || ((cur_word->prt_of_spch & 0b10000000) == 0b10000000)) && pred_dop)
+        {
+            AddDepolnenie(cur_word);
+            //cout << cur_word->name;
+        }
+        // По
+        else
+        {
+            pred_dop = false;
+            //cout << cur_word->name;
+        }
+        cur_word = cur_word->next_ptr;
+    }
+}
+
+// Функция добавления окончаний
 void add_ending(Ending*& cur_ptr, string name, int prt_of_spch, string face, string number, string time, string padezh)
 {
     Ending* ins_word;
@@ -78,6 +216,7 @@ void add_ending(Ending*& cur_ptr, string name, int prt_of_spch, string face, str
         cur_ptr = ins_word;
 }
 
+// Функция проверки окончаний
 void check_endings()
 {
     STWord* word_ptr = main_ptr;
@@ -88,6 +227,7 @@ void check_endings()
         int max_size = 0;
         while (cur_end != nullptr)
         {
+            // Пропускаем если окончание больше слова
             if ((word_ptr->word).length() < (cur_end->name).length())
             {
                 cur_end = cur_end->next_ptr;
@@ -95,15 +235,18 @@ void check_endings()
             }
             int cur_size = 0;
             cur_size = (cur_end->name).length();
+            // Находим совпадения по окончанию слова
             if (word_ptr->word.substr((word_ptr->word).length() - (cur_end->name).length()) == cur_end->name)
             {
+                // Учитываем только совпадения по наибольшим окончаниям
                 if (max_size <= cur_size) {
+                    // Первое совпадение - добавляем в структуру
                     if (!found_spch) {
-                        //cout << word_ptr->word << " по окончанию " << cur_end->name << endl;
                         add_ending(word_to_ending, word_ptr->word, cur_end->prt_of_spch, cur_end->face, cur_end->number, cur_end->time, cur_end->padezh);
                         found_spch = true;
                         max_size = cur_size;
                     }
+                    // Не первое - меням
                     else {
                         Ending* ptr;
                         ptr = word_to_ending;
@@ -129,14 +272,15 @@ void check_endings()
             }
             cur_end = cur_end->next_ptr;
         }
+        // Если не нашли совпадения, отображаем равную вероятность по каждой части речи
         if (found_spch == false)
             add_ending(word_to_ending, word_ptr->word, 0b11111111, "-", "-", "-", "-");
         word_ptr = word_ptr->next_ptr;
         cur_end = main_ending_ptr;
-        //file_ending.seekg(0, ios::beg);
     }
 }
 
+// Функция перевода в нижний регистр
 string to_lower_case(string str) {
     string result = str;
 
@@ -156,20 +300,8 @@ string to_lower_case(string str) {
     return result;
 }
 
-void free_node(Ending* word_ptr) {
-    Ending* temp_ptr = word_ptr->next_ptr;
-    if (word_ptr->next_ptr->next_ptr != nullptr) {
-        word_ptr->next_ptr->next_ptr->pred_ptr = word_ptr->next_ptr->pred_ptr;
-        word_ptr->next_ptr = word_ptr->next_ptr->next_ptr;
-    }
-    else {
-        word_ptr->next_ptr = nullptr;
-    }
-    delete temp_ptr;
-}
-
+// Функция поиска и записи предлогов в структуру
 void check_prep() {
-    //Максимальное количество слов в союзе - 5
     Ending* word_ptr = word_to_ending;
     Ending* cur_prep = main_prep;
     while (word_ptr != nullptr)
@@ -177,11 +309,13 @@ void check_prep() {
         word_ptr->name = to_lower_case(word_ptr->name);
         while (cur_prep != nullptr)
         {
+            // Пропускаем слова, которые больше предолга
             if ((word_ptr->name).length() > (cur_prep->name).length())
             {
                 cur_prep = cur_prep->next_ptr;
                 continue;
             }
+            // Если нашли совпадение - записываем в структуру
             if (word_ptr->name == cur_prep->name) {
                 word_ptr->prt_of_spch = 0b00000001;
                 word_ptr->face = "-";
@@ -190,10 +324,12 @@ void check_prep() {
                 word_ptr->padezh = cur_prep->padezh;
                 break;
             }
+            // Для сложных предлогов объединяем в одно слово и сравниваем со сложными предлогами из правил
             string compound_word = "";
             Ending* compound_ptr = word_ptr;
             bool is_found = false;
             int i = 0;
+            // Добавляем все предлоги в первый
             while (compound_ptr != nullptr and i < 3) {
                 compound_word += compound_ptr->name;
                 if (compound_word == cur_prep->name) {
@@ -221,31 +357,39 @@ void check_prep() {
         word_ptr = word_ptr->next_ptr;
     }
 
+    // Удаляем все предлоги идущие после первого (значит сложные их уже добавили в первый)
     word_ptr = word_to_ending;
     while (word_ptr != nullptr)
     {
         if (word_ptr->prt_of_spch == 0b00000001 and word_ptr->next_ptr != nullptr and word_ptr->next_ptr->prt_of_spch == 0b00000001) {
             word_ptr->name = word_ptr->name + "_" + word_ptr->next_ptr->name;
-            free_node(word_ptr);
+            free_node(word_ptr->next_ptr);
             continue;
         }
         word_ptr = word_ptr->next_ptr;
     }
 }
 
+// Функция поиска и удаления союзов, частиц и междометий
 void check_particles() {
     //Максимальное количество слов в союзе - 5
     Ending* word_ptr = word_to_ending;
     Ending* cur_particle = main_particles;
+    Ending* loc_ptr;
     while (word_ptr != nullptr)
     {
         while (cur_particle != nullptr)
         {
-            if (word_ptr->name == cur_particle->name) {
-                free_node(word_ptr->pred_ptr);
+            // Если нашли совпадение - удаляем
+            if (word_ptr->name == cur_particle->name)
+            {
+                if (word_ptr == word_to_ending)
+                    word_to_ending = word_ptr->next_ptr;
+                loc_ptr = word_ptr;
                 word_ptr = word_ptr->next_ptr;
-                break;
+                free_node(loc_ptr);
             }
+            // Удаляем сложные союзы
             string compound_word = "";
             Ending* compound_ptr = word_ptr;
             bool is_found = false;
@@ -254,8 +398,14 @@ void check_particles() {
                 compound_word += compound_ptr->name;
                 if (compound_word == cur_particle->name) {
                     compound_ptr = word_ptr;
-                    for (int j = 0; j < i + 1; j++) {
-                        free_node(word_ptr->pred_ptr);
+                    for (int j = 0; j < i + 1; j++)
+                    {
+                        if (word_ptr == word_to_ending)
+                            word_to_ending = word_ptr->next_ptr;
+                        loc_ptr = word_ptr;
+                        word_ptr = word_ptr->next_ptr;
+                        free_node(word_ptr);
+
                     }
                     word_ptr = compound_ptr;
                     is_found = true;
@@ -273,6 +423,7 @@ void check_particles() {
     }
 }
 
+// Функция поиска местоимений
 void check_pronoun() {
     Ending* word_ptr = word_to_ending;
     Ending* cur_pronoun = main_pronoun;
@@ -280,6 +431,7 @@ void check_pronoun() {
     {
         while (cur_pronoun != nullptr)
         {
+            // Если нашли совпадение - добавляем
             if (word_ptr->name == cur_pronoun->name) {
                 word_ptr->prt_of_spch = 0b00001000;
                 word_ptr->face = "-";
@@ -295,11 +447,13 @@ void check_pronoun() {
     }
 }
 
+// Функция поиска чилсительных
 void check_numaral() {
     Ending* word_ptr = word_to_ending;
     Ending* cur_numeral = main_numeral;
     while (word_ptr != nullptr)
     {
+        // Если нашли - добавляем
         while (cur_numeral != nullptr)
         {
             if (word_ptr->name == cur_numeral->name) {
@@ -317,31 +471,61 @@ void check_numaral() {
     }
 }
 
+// Функция удаления прилагательных
 void delete_adj() {
-    Ending* word_ptr = word_to_ending;
-    while (word_ptr != nullptr)
-    {
-        if (word_ptr->prt_of_spch == 0b00100000) {
-            free_node(word_ptr->pred_ptr);
-            word_ptr = word_ptr->next_ptr;
-            break;
+    Ending* current = word_to_ending;
+    Ending* to_delete = nullptr;
+    while (current != nullptr) {
+        Ending* next = current->next_ptr;
+        // Если нашли однозначно прилагательное - удаляем
+        if ((current->prt_of_spch & 0b00100000) == 0b00100000) {
+            to_delete = current;
+            // Обновляем связи
+            if (current->pred_ptr != nullptr) {
+                current->pred_ptr->next_ptr = current->next_ptr;
+            }
+            else {
+                word_to_ending = current->next_ptr;
+            }
+
+            if (current->next_ptr != nullptr) {
+                current->next_ptr->pred_ptr = current->pred_ptr;
+            }
+            delete to_delete;
         }
-        word_ptr = word_ptr->next_ptr;
+        current = next;
     }
 }
 
+// Функция вывода
 void Output()
 {
     STWord* ins_word;
     ins_word = main_ptr;
+    Depolnenie* ins_dep = main_dep;
+    // Вывод слов предложения
     while (ins_word != nullptr)
     {
         cout << ins_word->word << endl;
         ins_word = ins_word->next_ptr;
     }
-    cout << endl;
+    cout << endl << endl;
+    // Вывод дополнений
+    if (main_dep != nullptr)
+    {
+        cout << "Дополнения\n";
+        while (ins_dep != nullptr)
+        {
+            cout << ins_dep->name << endl;
+            ins_dep = ins_dep->next_ptr;
+        }
+        cout << endl << endl;
+    }
+    else
+        cout << "Дополнения\n-\n\n";
 }
 
+// Функция удаления структуры текста
 void free_struct_stword()
 {
     STWord* ins_word;
@@ -356,9 +540,25 @@ void free_struct_stword()
         delete loc_ptr;
     }
     main_ptr = nullptr;
-
 }
 
+// Функция удаления структуры дополнений
+void free_struct_depolnenie()
+{
+    Depolnenie* ins_word;
+    Depolnenie* loc_ptr;
+    ins_word = main_dep;
+    while (ins_word != nullptr)
+    {
+        loc_ptr = ins_word;
+        ins_word = ins_word->next_ptr;
+        loc_ptr->next_ptr = nullptr;
+        delete loc_ptr;
+    }
+    main_dep = nullptr;
+}
+
+// Функция удаления структуры окончаний
 void free_struct_endings(Ending*& cur_ptr)
 {
     Ending* ins_word;
@@ -375,6 +575,7 @@ void free_struct_endings(Ending*& cur_ptr)
     cur_ptr = nullptr;
 }
 
+// Функция загрузки слова в структуру 
 void LoadWord(string word)
 {
     STWord* ins_word;
@@ -397,8 +598,7 @@ void LoadWord(string word)
         main_ptr = ins_word;
 }
 
-
-
+// Функция вывода окончаний
 void out_ending()
 {
     ofstream out;          // поток для записи
@@ -421,18 +621,18 @@ void out_ending()
     out.close();
 }
 
-void DevideSentence(string filename) {
+// Функция обработки текста по предложениям
+void Analize_text(string filename) {
+    // Открытие файла на чтение
     ifstream fin(filename);
     if (!fin.is_open()) {
         cout << "Ошибка открытия файла!\n";
         system("pause");
         return;
     }
-
     string line;
     int sentence_number = 1;
     bool has_words_in_sentence = false;
-
     while (getline(fin, line)) {
         // Заменяем все лишние знаки препинания на пробелы
         for (char& c : line) {
@@ -440,10 +640,8 @@ void DevideSentence(string filename) {
                 c = ' ';
             }
         }
-
         istringstream iss(line);
         string word;
-
         while (iss >> word) {
             // Проверяем, заканчивается ли слово на .!?
             if (!word.empty() && (word.back() == '.' || word.back() == '?' || word.back() == '!')) {
@@ -455,19 +653,20 @@ void DevideSentence(string filename) {
                     LoadWord(clean_word);
                     has_words_in_sentence = true;
                 }
-
                 // Обрабатываем предложение только если в нем были слова
                 if (has_words_in_sentence) {
-                    Output();
                     check_endings();
                     check_particles();
                     check_prep();
                     check_pronoun();
                     check_numaral();
-                    //delete_adj();
                     out_ending();
+                    delete_adj();
+                    CheckDepolnenie();
+                    Output();
                     free_struct_stword();
                     free_struct_endings(word_to_ending);
+                    free_struct_depolnenie();
                     cout << "Обработка предложения " << sentence_number++ << endl;
                     has_words_in_sentence = false;
                 }
@@ -479,184 +678,188 @@ void DevideSentence(string filename) {
             }
         }
     }
-
     // Обработка последнего предложения если оно осталось
     if (has_words_in_sentence) {
-        Output();
         check_endings();
         check_particles();
         check_prep();
         check_pronoun();
         check_numaral();
         out_ending();
+        delete_adj();
+        CheckDepolnenie();
+        Output();
         free_struct_stword();
         free_struct_endings(word_to_ending);
+        free_struct_depolnenie();
         cout << "Обработка предложения " << sentence_number << endl;
     }
-
     fin.close();
     test_file_open = false;
     system("pause");
 }
 
-string WriteFilename() {                 //функция записи названия файла
-    string filename;
-    bool inputComplete = false;         //флаг завершения записи
-    while (!inputComplete) {
-        char ch = _getch();
-        if (ch == 27)
-            return "";         //в случае нажатия esc - пустая строка
-        else if (ch == 13)
-        {
-            if (!filename.empty())
-            {
-                cout << endl;
-                inputComplete = true;
-            }
-        }
-        else if (ch == 8) {               //удаление символа при нажатии backspace
-            if (!filename.empty())
-            {
-                filename.pop_back();
-                cout << "\b \b";
-            }
-        }
-        else if (((ch >= 'а' && ch <= 'я') || (ch >= 'А' && ch <= 'Я') || ch == 'Ё' || ch == 'ё' || ch == ' ' || ch == '.' || ch == '-' || isalpha(ch) || isalnum(ch)) == 1)
-        {
-            filename += ch;
-            cout << ch;
-        }
-    }
-    return filename;
-}
 
-// Функция для отображения меню с выделенным текущим пунктом
-void move_arr(int position, string items[], int size_items, string text) {
-    system("cls");  // Очистка экрана
-    cout << text;   // Вывод текста меню
-    for (int i = 0; i < size_items; i++) {
-        if (i == position)
-            cout << " " << char(155) << char(155) << "  ";  // Выделение текущего пункта
-        else
-            cout << "   ";
-        cout << items[i] << '\n';  // Вывод пункта меню
-    }
-}
+//string WriteFilename() {                 //функция записи названия файла
+//    string filename;
+//    bool inputComplete = false;         //флаг завершения записи
+//    while (!inputComplete) {
+//        char ch = _getch();
+//        if (ch == 27)
+//            return "";         //в случае нажатия esc - пустая строка
+//        else if (ch == 13)
+//        {
+//            if (!filename.empty())
+//            {
+//                cout << endl;
+//                inputComplete = true;
+//            }
+//        }
+//        else if (ch == 8) {               //удаление символа при нажатии backspace
+//            if (!filename.empty())
+//            {
+//                filename.pop_back();
+//                cout << "\b \b";
+//            }
+//        }
+//        else if (((ch >= 'а' && ch <= 'я') || (ch >= 'А' && ch <= 'Я') || ch == 'Ё' || ch == 'ё' || ch == ' ' || ch == '.' || ch == '-' || isalpha(ch) || isalnum(ch)) == 1)
+//        {
+//            filename += ch;
+//            cout << ch;
+//        }
+//    }
+//    return filename;
+//}
+//
+//// Функция для отображения меню с выделенным текущим пунктом
+//void move_arr(int position, string items[], int size_items, string text) {
+//    system("cls");  // Очистка экрана
+//    cout << text;   // Вывод текста меню
+//    for (int i = 0; i < size_items; i++) {
+//        if (i == position)
+//            cout << " " << char(155) << char(155) << "  ";  // Выделение текущего пункта
+//        else
+//            cout << "   ";
+//        cout << items[i] << '\n';  // Вывод пункта меню
+//    }
+//}
+//
+//// Функция для навигации по меню с помощью клавиш
+//int dynamic_menu(int& position, string items[], int size_items, string text) {
+//    char symbol;
+//    move_arr(position, items, size_items, text);  // Первоначальное отображение меню
+//    if (items == NULL) {
+//        cout << "\nФайлы не найдены. Добавьте файл(-ы) в папку с программой.\n";
+//        system("pause");
+//        system("cls");
+//        return -1;
+//    }
+//    do {
+//        symbol = _getch();  // Получение нажатой клавиши
+//        if (symbol == ENTER) {
+//            move_arr(position, items, size_items, text);
+//            return 0;
+//        }
+//        if (symbol == ESCAPE) {
+//            position = -2;  // Выход из меню
+//            return 0;
+//        }
+//        if (symbol == -32 && _kbhit()) {  // Обработка стрелок
+//            char sub_symbol;
+//            sub_symbol = _getch();
+//            if (sub_symbol == 72) {  // Стрелка вверх
+//                if (position > 0) {
+//                    position--;
+//                    move_arr(position, items, size_items, text);
+//                }
+//                else {
+//                    position = size_items - 1;
+//                    move_arr(position, items, size_items, text);
+//                }
+//
+//            }
+//            if (sub_symbol == 80) {  // Стрелка вниз
+//                if (position < size_items - 1) {
+//                    position++;
+//                    move_arr(position, items, size_items, text);
+//                }
+//                else {
+//                    position = 0;
+//                    move_arr(position, items, size_items, text);
+//                }
+//            }
+//            if (sub_symbol == 75) {  // Стрелка влево
+//                position = -1;
+//                return 0;
+//            }
+//            if (sub_symbol == 77) {  // Стрелка вправо
+//                move_arr(position, items, size_items, text);
+//                return 0;
+//            }
+//        }
+//    } while (symbol != ENTER);
+//}
+//
+//// Меню Да/Нет
+//int no_or_yes(string menu) {
+//    string list[2] = { "Нет", "Да" };
+//    int position = 0;
+//    system("cls");
+//    dynamic_menu(position, list, size(list), menu);
+//    return position;
+//}
+//
+//// Получает список txt-файлов в указанной папке
+//string* list_files(const string& folder_path, int& num_files) {
+//    WIN32_FIND_DATAA file_data;
+//    HANDLE h_find = FindFirstFileA((folder_path + "\\*.txt").c_str(), &file_data);
+//
+//    if (h_find == INVALID_HANDLE_VALUE) {
+//        num_files = 0;
+//        return nullptr; // Папка пуста или не существует
+//    }
+//
+//    // Первый проход: подсчёт количества файлов
+//    num_files = 0;
+//    do {
+//        if (!(file_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+//            num_files++;
+//        }
+//    } while (FindNextFileA(h_find, &file_data));
+//
+//    // Выделяем массив под имена файлов
+//    string* file_names = new string[num_files];
+//
+//    // Второй проход: заполнение массива (перезапускаем поиск)
+//    FindClose(h_find);
+//    h_find = FindFirstFileA((folder_path + "\\*.txt").c_str(), &file_data);
+//
+//    int index = 0;
+//    do {
+//        if (!(file_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+//            file_names[index++] = file_data.cFileName;
+//        }
+//    } while (FindNextFileA(h_find, &file_data));
+//
+//    FindClose(h_find);
+//    return file_names;
+//}
+//
+//// Получает путь к директории, где находится программа
+//string get_program_dir() {
+//    char buffer[MAX_PATH];
+//    GetModuleFileNameA(NULL, buffer, MAX_PATH);  // Получаем полный путь к исполняемому файлу
+//    string exe_path = buffer;
+//    return exe_path.substr(0, exe_path.find_last_of("\\/"));  // Возвращаем только директорию
+//}
 
-// Функция для навигации по меню с помощью клавиш
-int dynamic_menu(int& position, string items[], int size_items, string text) {
-    char symbol;
-    move_arr(position, items, size_items, text);  // Первоначальное отображение меню
-    if (items == NULL) {
-        cout << "\nФайлы не найдены. Добавьте файл(-ы) в папку с программой.\n";
-        system("pause");
-        system("cls");
-        return -1;
-    }
-    do {
-        symbol = _getch();  // Получение нажатой клавиши
-        if (symbol == ENTER) {
-            move_arr(position, items, size_items, text);
-            return 0;
-        }
-        if (symbol == ESCAPE) {
-            position = -2;  // Выход из меню
-            return 0;
-        }
-        if (symbol == -32 && _kbhit()) {  // Обработка стрелок
-            char sub_symbol;
-            sub_symbol = _getch();
-            if (sub_symbol == 72) {  // Стрелка вверх
-                if (position > 0) {
-                    position--;
-                    move_arr(position, items, size_items, text);
-                }
-                else {
-                    position = size_items - 1;
-                    move_arr(position, items, size_items, text);
-                }
-
-            }
-            if (sub_symbol == 80) {  // Стрелка вниз
-                if (position < size_items - 1) {
-                    position++;
-                    move_arr(position, items, size_items, text);
-                }
-                else {
-                    position = 0;
-                    move_arr(position, items, size_items, text);
-                }
-            }
-            if (sub_symbol == 75) {  // Стрелка влево
-                position = -1;
-                return 0;
-            }
-            if (sub_symbol == 77) {  // Стрелка вправо
-                move_arr(position, items, size_items, text);
-                return 0;
-            }
-        }
-    } while (symbol != ENTER);
-}
-
-// Меню Да/Нет
-int no_or_yes(string menu) {
-    string list[2] = { "Нет", "Да" };
-    int position = 0;
-    system("cls");
-    dynamic_menu(position, list, size(list), menu);
-    return position;
-}
-
-// Получает список txt-файлов в указанной папке
-string* list_files(const string& folder_path, int& num_files) {
-    WIN32_FIND_DATAA file_data;
-    HANDLE h_find = FindFirstFileA((folder_path + "\\*.txt").c_str(), &file_data);
-
-    if (h_find == INVALID_HANDLE_VALUE) {
-        num_files = 0;
-        return nullptr; // Папка пуста или не существует
-    }
-
-    // Первый проход: подсчёт количества файлов
-    num_files = 0;
-    do {
-        if (!(file_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-            num_files++;
-        }
-    } while (FindNextFileA(h_find, &file_data));
-
-    // Выделяем массив под имена файлов
-    string* file_names = new string[num_files];
-
-    // Второй проход: заполнение массива (перезапускаем поиск)
-    FindClose(h_find);
-    h_find = FindFirstFileA((folder_path + "\\*.txt").c_str(), &file_data);
-
-    int index = 0;
-    do {
-        if (!(file_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-            file_names[index++] = file_data.cFileName;
-        }
-    } while (FindNextFileA(h_find, &file_data));
-
-    FindClose(h_find);
-    return file_names;
-}
-
-// Получает путь к директории, где находится программа
-string get_program_dir() {
-    char buffer[MAX_PATH];
-    GetModuleFileNameA(NULL, buffer, MAX_PATH);  // Получаем полный путь к исполняемому файлу
-    string exe_path = buffer;
-    return exe_path.substr(0, exe_path.find_last_of("\\/"));  // Возвращаем только директорию
-}
-
+// Функция считывания правил окончаний
 bool parser_endings() {
     string line;
     ifstream endings("Окончания.txt"); // окрываем файл окончаний
     if (endings.is_open()) {
         while (getline(endings, line)) {
+            // Для прилагательных
             if (line == "прил:") {
                 while (line != "/") {
                     getline(endings, line);
@@ -665,6 +868,7 @@ bool parser_endings() {
                     add_ending(main_ending_ptr, line, 0b00100000, "-", "-", "-", "-");
                 }
             }
+            // Для глаголов
             if (line == "гл:") {
                 string word;
                 endings >> word;
@@ -686,6 +890,7 @@ bool parser_endings() {
                     endings >> word;
                 }
             }
+            // Для деепричастий
             if (line == "деепр:") {
                 string word;
                 endings >> word;
@@ -705,6 +910,7 @@ bool parser_endings() {
                     endings >> word;
                 }
             }
+            // Для наречий
             if (line == "нар:") {
                 while (line != "/") {
                     getline(endings, line);
@@ -713,6 +919,7 @@ bool parser_endings() {
                     add_ending(main_ending_ptr, line, 0b00000100, "-", "-", "-", "-");
                 }
             }
+            // Для существительных
             if (line == "сущ:") {
                 while (line != "/") {
                     getline(endings, line);
@@ -729,9 +936,10 @@ bool parser_endings() {
     return 1;
 }
 
+// Функция считывания правил предлогов
 bool parser_prep() {
     string line;
-    ifstream prep("Предлоги.txt"); // окрываем файл окончаний
+    ifstream prep("Предлоги.txt");
     if (prep.is_open()) {
         while (getline(prep, line)) {
             string member;
@@ -741,10 +949,11 @@ bool parser_prep() {
     }
     else
         return 0;
-    prep.close();     // закрываем файл
+    prep.close();
     return 1;
 }
 
+// Функция считывания правил союзов, частиц и междометий
 bool parser_particles() {
     string line;
     ifstream particle("Союзы, частицы, междометия.txt"); // окрываем файл окончаний
@@ -759,9 +968,10 @@ bool parser_particles() {
     return 1;
 }
 
+// Функция считывания местоимений
 bool parser_pronoun() {
     string line;
-    ifstream pronoun("Местоимения.txt"); // окрываем файл окончаний
+    ifstream pronoun("Местоимения.txt"); 
     if (pronoun.is_open()) {
         while (getline(pronoun, line)) {
             string prt_of_spch;
@@ -771,13 +981,14 @@ bool parser_pronoun() {
     }
     else
         return 0;
-    pronoun.close();     // закрываем файл
+    pronoun.close();
     return 1;
 }
 
+// Функция считывания числительных
 bool parser_numeral() {
     string line;
-    ifstream numeral("Числительные.txt"); // окрываем файл окончаний
+    ifstream numeral("Числительные.txt");
     if (numeral.is_open()) {
         while (getline(numeral, line)) {
             string prt_of_spch;
@@ -787,51 +998,94 @@ bool parser_numeral() {
     }
     else
         return 0;
-    numeral.close();     // закрываем файл
+    numeral.close();
     return 1;
+}
+
+// Функция выбора файлов
+int file_choose() {
+    int position = 0;
+    while (position > -1) {
+        string* file_names;
+        int num_files;
+        // Получаем список txt-файлов в директории программы
+        string program_dir = get_program_dir();
+        file_names = list_files(program_dir, num_files);
+        if (file_names == nullptr) {
+            cout << "\nВ папке нет файлов. Добавьте нужные файлы и вернитесь в это меню.\n\n";
+            system("pause");
+            return -1;
+        }
+        // Пользователь выбирает файл
+        dynamic_menu(position, file_names, num_files, main_menu_text);
+        if (position < 0)
+            return position;
+
+        // Формируем полный путь к файлу
+        program_dir = program_dir + "\\" + file_names[position];
+        ifstream fin(program_dir);
+
+        if (!fin.is_open()) {  // Если не удалось открыть файл
+            cout << "\nНе удалость открыть файл. Повторите еще раз или используйте дугой.\n\n";
+            system("pause");
+            continue;
+        }
+        Analize_text(program_dir);
+        return -2;
+    }
 }
 
 int main()
 {
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
-    cout << intro;
+    /*cout << intro;
     system("pause");
-    system("cls");
-    int position = 0;
+    system("cls");*/
     while (!parser_endings() or !parser_prep() or !parser_particles() or !parser_pronoun() or !parser_numeral())
     {
         cout << "Файлы правил не найдены, добавьте их в папку с программой, иначе невозможно продолжить работу программы.\n\n";
         system("pause");
         system("cls");
     }
-    while (position > -1) {
-        string* file_names;
-        int num_files;
+    // Создаем главное меню
+    root = create_node("main_menu", intro, nullptr, 0, nullptr);
+    add_node("main_menu", "1", main_menu_text, nullptr, 0, file_choose);
+    cycle();
 
-        // Получаем список txt-файлов в директории программы
-        string program_dir = get_program_dir();
-        file_names = list_files(program_dir, num_files);
-
-        // Пользователь выбирает файл
-        int empty_list = dynamic_menu(position, file_names, num_files, menu_choose_file);
-        if (empty_list == -1)
-            continue;
-
-
-
-        if (position < 0) {
-            string out_confirm = "Вы точно хотите выйти из программы?\n";
-            if (no_or_yes(out_confirm) == 1)  // Подтверждение выхода
-                return 0;
-            else
-                position = 0;
-            continue;
-        }
-
-        // Формируем полный путь к файлу
-        program_dir = program_dir + "\\" + file_names[position];
-        DevideSentence(program_dir);
-    }
+    //SetConsoleCP(1251);
+    //SetConsoleOutputCP(1251);
+    //cout << intro;
+    //system("pause");
+    //system("cls");
+    //int position = 0;
+    //while (!parser_endings() or !parser_prep() or !parser_particles() or !parser_pronoun() or !parser_numeral())
+    //{
+    //    cout << "Файлы правил не найдены, добавьте их в папку с программой, иначе невозможно продолжить работу программы.\n\n";
+    //    system("pause");
+    //    system("cls");
+    //}
+    //while (position > -1) {
+    //    string* file_names;
+    //    int num_files;
+    //    // Получаем список txt-файлов в директории программы
+    //    string program_dir = get_program_dir();
+    //    file_names = list_files(program_dir, num_files);
+    //    // Пользователь выбирает файл
+    //    int empty_list = dynamic_menu(position, file_names, num_files, menu_choose_file);
+    //    if (empty_list == -1)
+    //        continue;
+    //    if (position < 0) {
+    //        string out_confirm = "Вы точно хотите выйти из программы?\n";
+    //        if (no_or_yes(out_confirm) == 1)  // Подтверждение выхода
+    //            return 0;
+    //        else
+    //            position = 0;
+    //        continue;
+    //    }
+    //    // Формируем полный путь к файлу
+    //    program_dir = program_dir + "\\" + file_names[position];
+    //    Analize_text(program_dir);
+    //}
     return 0;
 }

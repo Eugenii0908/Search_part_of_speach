@@ -123,7 +123,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="interface_lib.cpp" />
     <ClCompile Include="TRPO.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="interface_lib.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
