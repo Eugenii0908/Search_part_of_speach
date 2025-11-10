@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <bitset>
+#include <vector>
 #include "interface_lib.h"
 
 //using namespace std;
@@ -50,6 +51,15 @@ struct Depolnenie
     Depolnenie* next_ptr;
 };
 
+//Структура дополнений со статистикой
+struct WordStat
+{
+    string word;
+    int count;
+    vector<int> sentence_numbers;
+    WordStat* next_ptr;
+};
+
 // Корень структуры слов текста
 STWord* main_ptr = nullptr;
 // Корень структуры окончаний
@@ -65,7 +75,8 @@ Ending* main_pronoun = nullptr;
 // Корень структуры числительных
 Ending* main_numeral = nullptr;
 // Корень структуры дополнений
-Depolnenie* main_dep;
+Depolnenie* main_dep = nullptr;
+WordStat* main_stat = nullptr;
 
 bool test_file_open = false;
 
@@ -153,6 +164,79 @@ void SortDepolnenie()
     main_dep = sorted;
 }
 
+void FreeDep(Depolnenie *dep)
+{
+    Depolnenie *loc_dep;
+    if(dep == main_dep)
+    {
+        main_dep = dep->next_ptr;
+        dep->next_ptr = nullptr;
+        delete dep;
+    }
+    else
+    {
+        loc_dep = main_dep;
+        while(loc_dep->next_ptr != dep)
+        {
+            loc_dep = loc_dep->next_ptr;
+        }
+        loc_dep->next_ptr = dep->next_ptr;
+        dep->next_ptr = nullptr;
+        delete dep;
+    }
+}
+
+WordStat* AddStat(Depolnenie* cur_dep)
+{
+    WordStat* ins_stat;
+    WordStat* ptr;
+    ins_stat = new WordStat;
+    ins_stat->word = cur_dep->name;
+    ins_stat->next_ptr = nullptr;
+    if (main_stat != nullptr)
+    {
+        ptr = main_stat;
+        while (ptr->next_ptr != nullptr)
+        {
+            ptr = ptr->next_ptr;
+        }
+        ptr->next_ptr = ins_stat;
+    }
+    else
+        main_stat = ins_stat;
+    return ins_stat;
+}
+
+void Statistic()
+{
+    Depolnenie *cur_dep = main_dep;
+    Depolnenie *loc_dep;
+    Depolnenie *locloc_dep;
+    WordStat *cur_stat;
+    int count_repeat = 0;
+    while(cur_dep != nullptr)
+    {
+        cur_stat = AddStat(cur_dep);
+        cur_stat->count = 1;
+        cur_stat->sentence_numbers.push_back(cur_dep->num_sent);
+        loc_dep = cur_dep->next_ptr;
+        while(loc_dep != nullptr)
+        {
+            if(cur_dep->name == loc_dep->name)
+            {
+                cur_stat->count++;
+                cur_stat->sentence_numbers.push_back(loc_dep->num_sent);
+                locloc_dep = loc_dep;
+                loc_dep = loc_dep->next_ptr;
+                FreeDep(locloc_dep);
+            }
+            else
+                loc_dep = loc_dep->next_ptr;
+        }
+        cur_dep = cur_dep->next_ptr;
+    }
+}
+
 // Функция вывода отсортированного списка в файл
 void WriteSortedToFile(string filename_text)
 {
@@ -179,9 +263,15 @@ void WriteSortedToFile(string filename_text)
             continue;
         }
     }
-
+    Depolnenie* current = main_dep;
+    int count = 0;
+    while(current != nullptr)
+    {
+        count++;
+        current = current->next_ptr;
+    }
     //SortDepolnenie();  // Сортируем перед выводом
-
+    Statistic();
     string filename = WriteFilename();
     if(filename.find(".txt") == -1)
     {
@@ -193,7 +283,7 @@ void WriteSortedToFile(string filename_text)
         return;
     }
     file << "Текст из файла:"<<filename_text<<endl;
-    file << "==========================\n";
+    file << "=================================\n";
     if(choice == '1')
     {
         file <<"Дополнения в хронологии с текстом\n";
@@ -203,14 +293,22 @@ void WriteSortedToFile(string filename_text)
         file << "Отсортированные дополнения:\n";
     }
 
-    file << "==========================\n";
+    file << "=================================\n";
 
-    Depolnenie* current = main_dep;
-    int count = 0;
-
-    while (current != nullptr) {
-        file << ++count << ". " << current->name << " из предложения "<<current->num_sent<<'\n';
-        current = current->next_ptr;
+    WordStat *cur_stat = main_stat;
+    while (cur_stat != nullptr)
+    {
+        file << cur_stat->word << " встречается "<<cur_stat->count<<" раз(а) в следующих предложениях: ";//<<cur_stat->sentence_numbers<<'\n';
+        for (size_t i = 0; i < cur_stat->sentence_numbers.size(); i++)
+        {
+            file << cur_stat->sentence_numbers[i];
+            if (i != cur_stat->sentence_numbers.size() - 1)
+            {
+                file << ", ";
+            }
+        }
+        file<<endl;
+        cur_stat = cur_stat->next_ptr;
     }
 
     file << "==========================\n";
@@ -695,6 +793,22 @@ void free_struct_stword()
     main_ptr = nullptr;
 }
 
+// Функция удаления структуры статистики дополнений
+void free_struct_statistic()
+{
+    WordStat* ins_word;
+    WordStat* loc_ptr;
+    ins_word = main_stat;
+    while (ins_word != nullptr)
+    {
+        loc_ptr = ins_word;
+        ins_word = ins_word->next_ptr;
+        loc_ptr->next_ptr = nullptr;
+        delete loc_ptr;
+    }
+    main_stat = nullptr;
+}
+
 // Функция удаления структуры дополнений
 void free_struct_depolnenie()
 {
@@ -851,6 +965,7 @@ void Analize_text(string filename) {
     fin.close();
     WriteSortedToFile(filename);
     free_struct_depolnenie();
+    free_struct_statistic();
     test_file_open = false;
     system("pause");
 }
