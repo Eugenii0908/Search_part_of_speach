@@ -299,12 +299,26 @@ void WriteSortedToFile(string filename_text)
     while (cur_stat != nullptr)
     {
         file << cur_stat->word << " встречается "<<cur_stat->count<<" раз(а) в следующих предложениях: ";//<<cur_stat->sentence_numbers<<'\n';
-        for (size_t i = 0; i < cur_stat->sentence_numbers.size(); i++)
+        if(choice == '1')
         {
-            file << cur_stat->sentence_numbers[i];
-            if (i != cur_stat->sentence_numbers.size() - 1)
+            for (int i = 0; i < cur_stat->sentence_numbers.size(); i++)
             {
-                file << ", ";
+                file << cur_stat->sentence_numbers[i];
+                if (i != cur_stat->sentence_numbers.size() - 1)
+                {
+                    file << ", ";
+                }
+            }
+        }
+        if(choice == '2')
+        {
+            for (int i = cur_stat->sentence_numbers.size()-1; i >= 0; i--)
+            {
+                file << cur_stat->sentence_numbers[i];
+                if (i != 0)
+                {
+                    file << ", ";
+                }
             }
         }
         file<<endl;
