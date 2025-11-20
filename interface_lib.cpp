@@ -273,58 +273,66 @@ void cycle() {
     int position = 0;
     while (position > -1) { 
         // Отображение меню
-        dynamic_menu(position, menu_pointer->list, menu_pointer->size_list, menu_pointer->text);
-        // Если нажат ESCAPE - выходим в главное меню
-        if (position == -2) {
-            // Если нажат ESCAPE в главном меню - уточняем о выходе
-            if (menu_pointer == root and no_or_yes("Вы уверены, что хотите выйти?\n") == 1)
-                return;
-            menu_pointer = root;
+        if (menu_pointer->size_list == 0 && menu_pointer->text == "") {
+            menu_pointer = menu_pointer->father;
             position = 0;
-            continue;
-        }
-        // Если нажата стребка влево - выходим на меню назад
-        if (position == -1) {
-            // Если нажата стрелка влево в главном меню - уточняем о выходе
-            if (menu_pointer == root and no_or_yes("Вы уверены, что хотите выйти?\n") == 1)
-                return;
-            else if (menu_pointer != root) {
-                menu_pointer = menu_pointer->father;
-                position = 0;
-                continue;
-            }
-            position = 0;
-            continue;
         }
         else {
-            // Переход к выбранному меню
-            if (menu_pointer->first_child == nullptr) {
+            dynamic_menu(position, menu_pointer->list, menu_pointer->size_list, menu_pointer->text);
+            // Если нажат ESCAPE - выходим в главное меню
+            if (position == -2) {
+                // Если нажат ESCAPE в главном меню - уточняем о выходе
+                if (menu_pointer == root and no_or_yes("Вы уверены, что хотите выйти?\n") == 1)
+                    return;
+                menu_pointer = root;
                 position = 0;
                 continue;
             }
-            menu_pointer = menu_pointer->first_child;
-            if (menu_pointer != 0) {
-                for (int i = 0; i < position; i++) {
-                    menu_pointer = menu_pointer->next_brother;
-                }
-            }
-            // Если в узле есть переданная функция для выполнения - выполняем
-            if (menu_pointer->function != nullptr) {
-                int result = menu_pointer->function();
-                // Переход на меню назад
-                if (result == -1)
+            // Если нажата стребка влево - выходим на меню назад
+            if (position == -1) {
+                // Если нажата стрелка влево в главном меню - уточняем о выходе
+                if (menu_pointer == root and no_or_yes("Вы уверены, что хотите выйти?\n") == 1)
+                    return;
+                else if (menu_pointer != root) {
                     menu_pointer = menu_pointer->father;
-                // Переход в главное меню
-                if (result == -2)
-                    menu_pointer = root;
-                // Переход в главное меню с сохранением указателя на пункт
-                if (result == -3) {
-                    menu_pointer = root;
+                    position = 0;
                     continue;
                 }
+                position = 0;
+                continue;
             }
-            position = 0;
         }
+        // Переход к выбранному меню
+        if (menu_pointer->first_child == nullptr) {
+            position = 0;
+            continue;
+        }
+        menu_pointer = menu_pointer->first_child;
+        if (menu_pointer != 0) {
+            for (int i = 0; i < position; i++) {
+                menu_pointer = menu_pointer->next_brother;
+            }
+        }
+        // Если в узле есть переданная функция для выполнения - выполняем
+        if (menu_pointer->function != nullptr) {
+            int result = menu_pointer->function();
+            // Переход на меню назад
+            if (result == -1)
+                menu_pointer = menu_pointer->father;
+            // Переход в главное меню
+            if (result == -2)
+                menu_pointer = root;
+            // Переход в главное меню с сохранением указателя на пункт
+            if (result == -3) {
+                menu_pointer = root;
+                continue;
+            }
+            // Пропуск этого меню
+            if (menu_pointer->size_list == 0 && menu_pointer->text == "")
+                if (menu_pointer->first_child != nullptr)
+                    menu_pointer = menu_pointer->first_child;
+        }
+        position = 0;
     }
     return;
 }
