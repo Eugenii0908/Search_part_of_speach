@@ -239,6 +239,7 @@ void Statistic()
                 locloc_dep = loc_dep;
                 loc_dep = loc_dep->next_ptr;
                 FreeDep(locloc_dep);
+                number_dop++;
             }
             else
                 loc_dep = loc_dep->next_ptr;
@@ -246,7 +247,7 @@ void Statistic()
         cur_dep = cur_dep->next_ptr;
         cout << "\rПодсчет статистики: " << setprecision(2) << fixed
             << (float)number_dop / num_depo * 100 << "%" << flush;
-        number_dop+=2;
+        number_dop++;
     }
 }
 
@@ -480,136 +481,174 @@ string to_lower_case(string str) {
     return result;
 }
 
-// Функция поиска и записи предлогов в структуру
 void check_prep() {
     if (word_to_ending == nullptr) return;
-    Ending* word_ptr = word_to_ending;
-    Ending* cur_prep = main_prep;
-    while (word_ptr != nullptr)
+
+    Ending* current = word_to_ending;
+
+    while (current != nullptr)
     {
-        word_ptr->name = to_lower_case(word_ptr->name);
-        while (cur_prep != nullptr)
-        {
-            // Пропускаем слова, которые больше предолга
-            if ((word_ptr->name).length() > (cur_prep->name).length())
-            {
-                cur_prep = cur_prep->next_ptr;
-                continue;
-            }
-            // Если нашли совпадение - записываем в структуру
-            if (word_ptr->name == cur_prep->name) {
-                word_ptr->prt_of_spch = 0b00000001;
-                word_ptr->face = "-";
-                word_ptr->number = "-";
-                word_ptr->time = "-";
-                word_ptr->padezh = cur_prep->padezh;
+        Ending* next = current->next_ptr;
+        bool processed = false;
+
+        current->name = to_lower_case(current->name);
+
+        // Проверка одиночных предлогов
+        Ending* cur_prep = main_prep;
+        while (cur_prep != nullptr && !processed) {
+            if (current->name.length() <= cur_prep->name.length() &&
+                current->name == cur_prep->name) {
+                // Нашли одиночный предлог
+                current->prt_of_spch = 0b00000001;
+                current->face = "-";
+                current->number = "-";
+                current->time = "-";
+                current->padezh = cur_prep->padezh;
+                processed = true;
                 break;
             }
-            // Для сложных предлогов объединяем в одно слово и сравниваем со сложными предлогами из правил
-            string compound_word = "";
-            Ending* compound_ptr = word_ptr;
-            bool is_found = false;
-            int i = 0;
-            // Добавляем все предлоги в первый
-            while (compound_ptr != nullptr and i < 3) {
-                compound_word += compound_ptr->name;
-                if (compound_word == cur_prep->name) {
-                    compound_ptr = word_ptr;
-                    for (int j = 0; j < i + 1; j++) {
-                        compound_ptr->prt_of_spch = 0b00000001;
-                        compound_ptr->face = "-";
-                        compound_ptr->number = "-";
-                        compound_ptr->time = "-";
-                        compound_ptr->padezh = cur_prep->padezh;
-                        compound_ptr = compound_ptr->next_ptr;
-                    }
-                    word_ptr = compound_ptr;
-                    is_found = true;
-                    break;
-                }
-                i++;
-                compound_ptr = compound_ptr->next_ptr;
-            }
-            if (is_found)
-                break;
             cur_prep = cur_prep->next_ptr;
         }
-        cur_prep = main_prep;
-        if (word_ptr == nullptr)
-            break;
-        word_ptr = word_ptr->next_ptr;
+
+        // Проверка составных предлогов (только если текущий не обработан)
+        if (!processed) {
+            cur_prep = main_prep;
+            while (cur_prep != nullptr && !processed) {
+                string compound_word = "";
+                Ending* compound_ptr = current;
+                int i = 0;
+
+                // Собираем составное слово из нескольких узлов
+                while (compound_ptr != nullptr && i < 3) {
+                    compound_word += compound_ptr->name;
+                    if (compound_word == cur_prep->name) {
+                        // Нашли составной предлог - помечаем все слова в последовательности
+                        Ending* mark_ptr = current;
+                        for (int j = 0; j <= i && mark_ptr != nullptr; j++) {
+                            mark_ptr->prt_of_spch = 0b00000001;
+                            mark_ptr->face = "-";
+                            mark_ptr->number = "-";
+                            mark_ptr->time = "-";
+                            mark_ptr->padezh = cur_prep->padezh;
+                            mark_ptr = mark_ptr->next_ptr;
+                        }
+                        processed = true;
+                        break;
+                    }
+                    i++;
+                    if (compound_ptr != nullptr) {
+                        compound_ptr = compound_ptr->next_ptr;
+                    }
+                }
+                cur_prep = cur_prep->next_ptr;
+            }
+        }
+
+        current = next;
     }
 
-    // Удаляем все предлоги идущие после первого (значит сложные их уже добавили в первый)
-    word_ptr = word_to_ending;
-    while (word_ptr != nullptr)
+    // Объединение последовательных предлогов в один узел
+    current = word_to_ending;
+    while (current != nullptr && current->next_ptr != nullptr)
     {
-        if (word_ptr->prt_of_spch == 0b00000001 and word_ptr->next_ptr != nullptr and word_ptr->next_ptr->prt_of_spch == 0b00000001) {
-            word_ptr->name = word_ptr->name + "_" + word_ptr->next_ptr->name;
-            free_node(word_ptr->next_ptr);
-            continue;
+        Ending* next = current->next_ptr;
+
+        if (current->prt_of_spch == 0b00000001 &&
+            next->prt_of_spch == 0b00000001) {
+            // Объединяем предлоги
+            current->name = current->name + "_" + next->name;
+
+            // Удаляем следующий узел
+            current->next_ptr = next->next_ptr;
+            if (next->next_ptr != nullptr) {
+                next->next_ptr->pred_ptr = current;
+            }
+            delete next;
         }
-        word_ptr = word_ptr->next_ptr;
+        else {
+            current = current->next_ptr;
+        }
     }
 }
 
-// Функция поиска и удаления союзов, частиц и междометий
 void check_particles() {
-    //if (word_to_ending == nullptr) return;
-    //Максимальное количество слов в союзе - 5
-    Ending* word_ptr = word_to_ending;
-    Ending* cur_particle = main_particles;
-    Ending* loc_ptr;
-    while (word_ptr != nullptr)
-    {
-        word_ptr->name = to_lower_case(word_ptr->name);
-        while (cur_particle != nullptr)
-        {
-            // Если нашли совпадение - удаляем
-            if ((word_ptr->next_ptr == nullptr) && (word_ptr->name == cur_particle->name)) {
-                free_node(word_ptr);
-                return;
-            }
-            if (word_ptr->name == cur_particle->name)
-            {
-                if (word_ptr == word_to_ending)
-                    word_to_ending = word_ptr->next_ptr;
-                loc_ptr = word_ptr;
-                word_ptr = word_ptr->next_ptr;
-                free_node(loc_ptr);
-            }
-            if (word_to_ending == nullptr) return;
-            // Удаляем сложные союзы
-            string compound_word = "";
-            Ending* compound_ptr = word_ptr;
-            bool is_found = false;
-            int i = 0;
-            while (compound_ptr != nullptr and i < 5) {
-                compound_word += compound_ptr->name;
-                if (compound_word == cur_particle->name) {
-                    compound_ptr = word_ptr;
-                    for (int j = 0; j < i + 1; j++)
-                    {
-                        if (word_ptr == word_to_ending)
-                            word_to_ending = word_ptr->next_ptr;
-                        loc_ptr = word_ptr;
-                        word_ptr = word_ptr->next_ptr;
-                        free_node(word_ptr);
+    if (word_to_ending == nullptr) return;
 
-                    }
-                    word_ptr = compound_ptr;
-                    is_found = true;
-                    break;
+    Ending* current = word_to_ending;
+    Ending* prev = nullptr;
+
+    while (current != nullptr)
+    {
+        Ending* next = current->next_ptr;
+        bool deleted = false;
+
+        // Проверка одиночных частиц
+        Ending* cur_particle = main_particles;
+        while (cur_particle != nullptr && !deleted) {
+            if (current->name == cur_particle->name) {
+                // Удаляем текущий узел
+                if (prev != nullptr) {
+                    prev->next_ptr = next;
                 }
-                i++;
-                compound_ptr = compound_ptr->next_ptr;
-            }
-            if (is_found)
+                else {
+                    word_to_ending = next;
+                }
+                if (next != nullptr) {
+                    next->pred_ptr = prev;
+                }
+                delete current;
+                deleted = true;
                 break;
+            }
             cur_particle = cur_particle->next_ptr;
         }
-        cur_particle = main_particles;
-        word_ptr = word_ptr->next_ptr;
+
+        // Проверка составных частиц (только если текущий не удален)
+        if (!deleted) {
+            cur_particle = main_particles;
+            while (cur_particle != nullptr && !deleted) {
+                string compound_word = "";
+                Ending* compound_ptr = current;
+                int i = 0;
+
+                // Собираем составное слово
+                while (compound_ptr != nullptr && i < 3) {
+                    compound_word += compound_ptr->name;
+                    if (compound_word == cur_particle->name) {
+                        // Удаляем последовательность узлов
+                        Ending* to_delete = current;
+                        for (int j = 0; j <= i; j++) {
+                            Ending* next_delete = to_delete->next_ptr;
+                            if (prev != nullptr) {
+                                prev->next_ptr = next_delete;
+                            }
+                            else {
+                                word_to_ending = next_delete;
+                            }
+                            if (next_delete != nullptr) {
+                                next_delete->pred_ptr = prev;
+                            }
+                            delete to_delete;
+                            to_delete = next_delete;
+                        }
+                        deleted = true;
+                        next = to_delete; // Обновляем next для продолжения
+                        break;
+                    }
+                    i++;
+                    compound_ptr = compound_ptr->next_ptr;
+                }
+                cur_particle = cur_particle->next_ptr;
+            }
+        }
+
+        if (deleted) {
+            current = next;
+        }
+        else {
+            prev = current;
+            current = next;
+        }
     }
 }
 
@@ -837,6 +876,8 @@ void out_ending()
 // Функция обработки текста по предложениям
 void Analize_text(string filename) {
     // Открытие файла на чтение
+    free_struct_depolnenie();
+    free_struct_statistic();
     int num_sent = 0;
     cout << "\nПодождите, текст анализируется...\n";
     ifstream fin(filename);
@@ -853,15 +894,27 @@ void Analize_text(string filename) {
     }
     string line;
     while (getline(fin, line)) {
-        bool is_point = false;
-        for (char& c : line) {
-            if ((is_point == false) && (c == '.' || c == '!' || c == '?')) {
-                is_point = true;
-                num_sent++;
+        // Заменяем все лишние знаки препинания на пробелы
+        istringstream iss(line);
+        string word;
+        while (iss >> word) {
+            for (char& c : word) {
+                if ((ispunct(c) || c == '\"' || c == '\'') && c != '.' && c != '?' && c != '!') {
+                    c = ' ';
+                }
             }
-            else
-                is_point = false;
+            // Проверяем, заканчивается ли слово на .!?
+            if (!word.empty() && (word.back() == '.' || word.back() == '?' || word.back() == '!')) {
+                // Убираем знак препинания
+                string clean_word = word.substr(0, word.length() - 1);
+                if (word.back() == '.' && word[word.length() - 2] == '.')
+                    clean_word = word.substr(0, word.length() - 3);
 
+                // Добавляем слово только если оно не пустое
+                if (!clean_word.empty()) {
+                    num_sent++;
+                }
+            }
         }
     }
     fin.clear();
@@ -879,7 +932,7 @@ void Analize_text(string filename) {
             else
                 sentance = sentance + " " + word;
             for (char& c : word) {
-                if (ispunct(c) && c != '.' && c != '?' && c != '!') {
+                if ((ispunct(c) || c == '\"' || c == '\'') && c != '.' && c != '?' && c != '!') {
                     c = ' ';
                 }
             }
@@ -900,7 +953,7 @@ void Analize_text(string filename) {
                     fout << sentence_number << "." << sentance << " ";
                     sentance = "";
                     check_endings();
-                    check_particles();
+                    //check_particles();
                     check_prep();
                     check_pronoun();
                     check_numaral();
@@ -910,7 +963,6 @@ void Analize_text(string filename) {
                     //Output();
                     free_struct_stword();
                     free_struct_endings(word_to_ending);
-                    free_struct_endings(main_ending_ptr); 
                     cout << "\rПроанализировано: " << setprecision(2) << fixed
                         << (float)sentence_number / num_sent * 100 << "%" << flush;
                     sentence_number++;
@@ -939,7 +991,6 @@ void Analize_text(string filename) {
         //Output();
         free_struct_stword();
         free_struct_endings(word_to_ending);
-        free_struct_endings(main_ending_ptr);
     }
     fin.close();
     fout.close();
