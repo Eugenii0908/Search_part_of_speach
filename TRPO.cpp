@@ -6,12 +6,18 @@
 #include <string>
 #include <bitset>
 #include <vector>
-#include "interface_lib.h"
 #include <iomanip>
+// Самописная библиотека для реализации интерфейса
+#include "interface_lib.h"
 
+// Флаг выбора типа вывода
 bool choice = 0;
+// Название входного файла
 string filename_text;
+// Количество дополнений
 long long num_depo = 0;
+// Флаг открытия тестового файла
+bool test_file_open = false;
 
 // Тексты интерфейса
 const string intro = "Это программа для распознавания дополнений в тексте.\n-Для перемещения по пунктам используйте стрелки вверх/вниз\n"
@@ -21,6 +27,7 @@ const string main_menu_text = "Файл должен находиться в п�
 const string menu_1_1_text = "Выберите тип вывода результатов в файл:\n";
 string menu_1_1_list[] = {"Вывод дополнений в хронологии с текстом", "Вывод дополнений в отсортированном формате"};
 const string menu_1_1_1_text = "Введите название файла, в который хотите вывести данные:\n\n";
+
 // Структура для считывания текста с файла
 struct STWord
 {
@@ -76,9 +83,8 @@ Ending* main_pronoun = nullptr;
 Ending* main_numeral = nullptr;
 // Корень структуры дополнений
 Depolnenie* main_dep = nullptr;
+// Корень структуры сбора статистики
 WordStat* main_stat = nullptr;
-
-bool test_file_open = false;
 
 // Функция очистки элемента
 void free_node(Ending* node_to_delete) {
@@ -91,56 +97,57 @@ void free_node(Ending* node_to_delete) {
         delete node_to_delete;
         return;
     }
-
     if (node_to_delete->pred_ptr != nullptr) {
         node_to_delete->pred_ptr->next_ptr = node_to_delete->next_ptr;
     }
     if (node_to_delete->next_ptr != nullptr) {
         node_to_delete->next_ptr->pred_ptr = node_to_delete->pred_ptr;
     }
-
-
 }
 
-string WriteFilename() {                 //функция записи названия файла
-    string filename;
-    bool inputComplete = false;         //флаг завершения записи
-    //cout << "Введите название файла\n";
-    while (!inputComplete) {
-        char ch = _getch();
-        if (ch == 27)
-            return "";         //в случае нажатия esc - пустая строка
-        else if (ch == 13)
-        {
-            if (!filename.empty())
-            {
-                cout << endl;
-                inputComplete = true;
-            }
-        }
-        else if (ch == 8) {               //удаление символа при нажатии backspace
-            if (!filename.empty())
-            {
-                filename.pop_back();
-                cout << "\b \b";
-            }
-        }
-        else if (((ch >= 'а' && ch <= 'я') || (ch >= 'А' && ch <= 'Я') || ch == 'Ё' || ch == 'ё' || ch == ' ' || ch == '.' || ch == '-' || isalpha(ch) || isalnum(ch)) == 1)
-        {
-            filename += ch;
-            cout << ch;
-        }
-    }
-    return filename;
-}
+//// Функция записи названия файла
+//string WriteFilename() {
+//    string filename;
+//    // Флаг завершения записи
+//    bool inputComplete = false;
+//    while (!inputComplete) {
+//        char ch = _getch();
+//        // В случае нажатия esc - пустая строка
+//        if (ch == 27)
+//            return "";
+//        else if (ch == 13)
+//        {
+//            if (!filename.empty())
+//            {
+//                cout << endl;
+//                inputComplete = true;
+//            }
+//        }
+//        // Удаление символа при нажатии backspace
+//        else if (ch == 8) {
+//            if (!filename.empty())
+//            {
+//                filename.pop_back();
+//                cout << "\b \b";
+//            }
+//        }
+//        else if (((ch >= 'а' && ch <= 'я') || (ch >= 'А' && ch <= 'Я') || ch == 'Ё' || ch == 'ё' || ch == ' ' || ch == '.' || ch == '-' || isalpha(ch) || isalnum(ch)) == 1)
+//        {
+//            filename += ch;
+//            cout << ch;
+//        }
+//    }
+//    return filename;
+//}
+
 //Функция сортировки
-void SortDepolnenie()
-{
+void SortDepolnenie() {
     int number_dop = 0;
     if (main_dep == nullptr || main_dep->next_ptr == nullptr)
         return;
 
-    Depolnenie* sorted = nullptr;  // Начало отсортированного списка
+    // Начало отсортированного списка
+    Depolnenie* sorted = nullptr; 
 
     Depolnenie* current = main_dep;
     while (current != nullptr) {
@@ -168,20 +175,20 @@ void SortDepolnenie()
         }
         current = next;
     }
-
     main_dep = sorted;
 }
 
 // Функция очистки дополнений
-void FreeDep(Depolnenie* dep)
-{
+void FreeDep(Depolnenie* dep) {
     Depolnenie* loc_dep;
+    // Удаление корневого указателя
     if (dep == main_dep)
     {
         main_dep = dep->next_ptr;
         dep->next_ptr = nullptr;
         delete dep;
     }
+    // Удаление некорневого
     else
     {
         loc_dep = main_dep;
@@ -195,6 +202,7 @@ void FreeDep(Depolnenie* dep)
     }
 }
 
+// Функция добавления статистики
 WordStat* AddStat(Depolnenie* cur_dep)
 {
     WordStat* ins_stat;
@@ -202,6 +210,7 @@ WordStat* AddStat(Depolnenie* cur_dep)
     ins_stat = new WordStat;
     ins_stat->word = cur_dep->name;
     ins_stat->next_ptr = nullptr;
+    // Добавление в корень
     if (main_stat != nullptr)
     {
         ptr = main_stat;
@@ -211,11 +220,13 @@ WordStat* AddStat(Depolnenie* cur_dep)
         }
         ptr->next_ptr = ins_stat;
     }
+    // Добавление не в корень
     else
         main_stat = ins_stat;
     return ins_stat;
 }
 
+// Функция подсчета статистики
 void Statistic()
 {
     Depolnenie* cur_dep = main_dep;
@@ -226,14 +237,17 @@ void Statistic()
     int number_dop = 0;
     while (cur_dep != nullptr)
     {
+        // Подсчет номера предложения
         cur_stat = AddStat(cur_dep);
         cur_stat->count = 1;
         cur_stat->sentence_numbers.push_back(cur_dep->num_sent);
         loc_dep = cur_dep->next_ptr;
         while (loc_dep != nullptr)
         {
+            // Поиск совпадений по дополнению
             if (cur_dep->name == loc_dep->name)
             {
+                // Счетчик совпадений
                 cur_stat->count++;
                 cur_stat->sentence_numbers.push_back(loc_dep->num_sent);
                 locloc_dep = loc_dep;
@@ -245,6 +259,7 @@ void Statistic()
                 loc_dep = loc_dep->next_ptr;
         }
         cur_dep = cur_dep->next_ptr;
+        // Отображение процесса подсчета
         cout << "\rПодсчет статистики: " << setprecision(2) << fixed
             << (float)number_dop / num_depo * 100 << "%" << flush;
         number_dop++;
@@ -261,6 +276,7 @@ void AddDepolnenie(Ending* word, int num)
     ins_dep->name = word->name;
     ins_dep->num_sent = num;
     ins_dep->next_ptr = nullptr;
+    // Для корневого узла
     if (main_dep != nullptr)
     {
         ptr = main_dep;
@@ -270,6 +286,7 @@ void AddDepolnenie(Ending* word, int num)
         }
         ptr->next_ptr = ins_dep;
     }
+    // Для некорневого узла
     else
         main_dep = ins_dep;
 }
@@ -281,10 +298,11 @@ void CheckDepolnenie(int num)
     Ending* cur_word = word_to_ending;
     bool pred_dop = false;
     bool cur_dop = false;
+    //cout << num << endl;
     while (cur_word != nullptr)
     {
         // Если местоимение или существительное и перед стоит предлог
-        if ((((cur_word->prt_of_spch & 0b10000000) == 0b10000000) || ((cur_word->prt_of_spch & 0b00010000) == 0b00010000) || ((cur_word->prt_of_spch & 0b00001000) == 0b00001000)) && cur_word->padezh != "ип")
+        if ((((cur_word->prt_of_spch & 0b10000000) == 0b10000000) || ((cur_word->prt_of_spch & 0b00010000) == 0b00010000) || (cur_word->prt_of_spch == 0b00001000)) && cur_word->padezh != "ип")
         {
             if (cur_word->pred_ptr != nullptr)
             {
@@ -297,6 +315,7 @@ void CheckDepolnenie(int num)
                         continue;
                     }
                     cur_word->name = cur_word->pred_ptr->name + " " + cur_word->name;
+                    //cout << cur_word->name << " " << "После предлога\n";
                     AddDepolnenie(cur_word, num);
                     pred_dop = true;
                     cur_word = cur_word->next_ptr;
@@ -304,55 +323,81 @@ void CheckDepolnenie(int num)
                 }
             }
         }
-        // Существительные после прилагательного и неименительные местоимения
-        if ((((cur_word->prt_of_spch & 0b10000000) == 0b10000000) || ((cur_word->prt_of_spch & 0b00001000) == 0b00001000)) && cur_word->padezh == "нип") {
+        // Существительные после прилагательного
+        if ((((cur_word->prt_of_spch & 0b10000000) == 0b10000000) && cur_word->padezh == "доп")) {
             // Если дальше идет глагол - значит подлежащее
             if (cur_dop == true || (cur_word->next_ptr != nullptr && cur_word->next_ptr->prt_of_spch == 0b01000000)) {
                 cur_word = cur_word->next_ptr;
                 pred_dop = false;
                 continue;
             }
+            // Если раньше идет обстоятельный предлог - пропускаем
+            if (cur_word->pred_ptr != nullptr && cur_word->pred_ptr->prt_of_spch == 0b00000001 && cur_word->pred_ptr->padezh == "обст") {
+                cur_word = cur_word->next_ptr;
+                pred_dop = false;
+                continue;
+            }
+            //cout << cur_word->name << " " << "После прил\n";
+            AddDepolnenie(cur_word, num);
+            pred_dop = true;
+            cur_word = cur_word->next_ptr;
+            continue;
+        }
+        // Неимнительные местоимения
+        if ((cur_word->prt_of_spch == 0b00001000) && cur_word->padezh != "ип") {
+            //cout << cur_word->name << " " << "мест\n";
             AddDepolnenie(cur_word, num);
             pred_dop = true;
             cur_word = cur_word->next_ptr;
             continue;
         }
         // После глагола
-        if (((cur_word->prt_of_spch & 0b01000000) == 0b01000000) && cur_word->next_ptr != nullptr && ((((cur_word->next_ptr->prt_of_spch & 0b10000000) == 0b10000000) || ((cur_word->next_ptr->prt_of_spch & 0b00001000) == 0b00001000)) && cur_word->next_ptr->padezh != "ип"))
+        if (((cur_word->prt_of_spch & 0b01000000) == 0b01000000) && cur_word->next_ptr != nullptr && ((((cur_word->next_ptr->prt_of_spch & 0b10000000) == 0b10000000) || (cur_word->next_ptr->prt_of_spch == 0b00001000)) && cur_word->next_ptr->padezh != "ип") && (cur_word->prt_of_spch != 0b11111111))
         {
+            // Если есть вероятность, что наречие или предлог - пропускаем
+            if (((cur_word->next_ptr->prt_of_spch & 0b00000100) == 0b00000100) || (cur_word->next_ptr->prt_of_spch == 0b00000001)) {
+                cur_word = cur_word->next_ptr;
+                pred_dop = false;
+                continue;
+            }
+            //cout << cur_word->next_ptr->name << " " << "После глагола\n";
             AddDepolnenie(cur_word->next_ptr, num);
             cur_word = cur_word->next_ptr;  //пропустить слово, чтоб 2 раза не записывать
             pred_dop = true;
         }
         // После числительного
-        else if ((cur_word->prt_of_spch == 0b00010000) && (cur_word->next_ptr != nullptr) && (((cur_word->next_ptr->prt_of_spch & 0b10000000) == 0b10000000) || ((cur_word->next_ptr->prt_of_spch & 0b00001000) == 0b00001000))) //&& cur_word->next_ptr->padezh == "нип")))
+        else if ((cur_word->prt_of_spch == 0b00010000) && (cur_word->padezh == "нип") && (cur_word->next_ptr != nullptr) && (((cur_word->next_ptr->prt_of_spch & 0b10000000) == 0b10000000) || (cur_word->next_ptr->prt_of_spch == 0b00001000)) && (cur_word->next_ptr->padezh != "ип"))
         {
-            // Если дальше идет глагол - значит подлежащее
-            if (cur_word->next_ptr->next_ptr != nullptr && cur_word->next_ptr->next_ptr->prt_of_spch == 0b01000000) {
-                cur_word = cur_word->next_ptr;
-                pred_dop = false;
-                continue;
-            }
-            AddDepolnenie(cur_word->next_ptr, num);
+            //// Если дальше идет глагол - значит подлежащее
+            //if (cur_word->next_ptr->next_ptr != nullptr && cur_word->next_ptr->next_ptr->prt_of_spch == 0b01000000) {
+            //    cur_word = cur_word->next_ptr;
+            //    pred_dop = false;
+            //    continue;
+            //}
+            cur_word->name = cur_word->name + " " + cur_word->next_ptr->name;
+            //cout << cur_word->name << " " << "После числительного\n";
+            AddDepolnenie(cur_word, num);
             cur_word = cur_word->next_ptr;
             pred_dop = true;
         }
         // После деепричастия
-        else if (((cur_word->prt_of_spch & 0b00000010) == 0b00000010) && cur_word->next_ptr != nullptr && (((cur_word->next_ptr->prt_of_spch & 0b10000000) == 0b10000000) || (((cur_word->next_ptr->prt_of_spch & 0b00001000) == 0b00001000)))) //&& cur_word->next_ptr->padezh == "нип")))
+        else if (((cur_word->prt_of_spch & 0b00000010) == 0b00000010) && (cur_word->next_ptr != nullptr) && (((cur_word->next_ptr->prt_of_spch & 0b10000000) == 0b10000000) || ((cur_word->next_ptr->prt_of_spch == 0b00001000))) && (cur_word->next_ptr->padezh != "ип") && (cur_word->prt_of_spch != 0b11111111))
         {
+            //cout << cur_word->next_ptr->name << " " << "После деепр\n";
             AddDepolnenie(cur_word->next_ptr, num);
             cur_word = cur_word->next_ptr;  //пропустить слово, чтоб 2 раза не записывать
             pred_dop = true;
         }
         // После дополнения
-        else if ((cur_word->padezh == "нип" || ((cur_word->prt_of_spch & 0b10000000) == 0b10000000)) && pred_dop && !cur_dop)
+        else if ((((cur_word->prt_of_spch == 0b00001000) && (cur_word->padezh != "ип")) || ((cur_word->prt_of_spch & 0b10000000) == 0b10000000)) && pred_dop && !cur_dop)
         {
-            // Если есть вероятность, что наречие - пропускаем
-            if ((cur_word->prt_of_spch & 0b00000100) == 0b00000100) {
+            // Если есть вероятность, что наречие или предлог - пропускаем
+            if (((cur_word->prt_of_spch & 0b00000100) == 0b00000100) || (cur_word->prt_of_spch == 0b00000001)) {
                 cur_word = cur_word->next_ptr;
                 pred_dop = false;
                 continue;
             }
+            //cout << cur_word->name << " " << "После доп\n";
             AddDepolnenie(cur_word, num);
         }
         else
@@ -362,6 +407,7 @@ void CheckDepolnenie(int num)
         cur_dop = false;
         cur_word = cur_word->next_ptr;
     }
+    //cout << endl;
 }
 
 // Функция добавления окончаний
@@ -370,6 +416,7 @@ void add_ending(Ending*& cur_ptr, string name, int prt_of_spch, string face, str
     Ending* ins_word;
     Ending* ptr;
     ins_word = new Ending;
+    // Обновление всех полей
     ins_word->name = name;
     ins_word->prt_of_spch |= prt_of_spch;
     if (face != "-")
@@ -380,6 +427,7 @@ void add_ending(Ending*& cur_ptr, string name, int prt_of_spch, string face, str
         ins_word->time = time;
     if (padezh != "-")
         ins_word->padezh = padezh;
+    // Добавление в конец
     ins_word->pred_ptr = nullptr;
     ins_word->next_ptr = nullptr;
     if (cur_ptr != nullptr)
@@ -394,6 +442,26 @@ void add_ending(Ending*& cur_ptr, string name, int prt_of_spch, string face, str
     }
     else
         cur_ptr = ins_word;
+}
+
+// Функция перевода в нижний регистр
+string to_lower_case(string str) {
+    string result = str;
+
+    for (char& c : result) {
+        // Русские заглавные буквы
+        if (c >= 'А' && c <= 'Я') {
+            c = c + 32; // Преобразуем в строчные
+        }
+        else if (c == 'Ё') {
+            c = 'ё';
+        }
+        // Английские и другие символы
+        else if (c >= 'A' && c <= 'Z') {
+            c = c + 32;
+        }
+    }
+    return result;
 }
 
 // Функция проверки окончаний
@@ -416,6 +484,7 @@ void check_endings()
             }
             int cur_size = 0;
             cur_size = (cur_end->name).length();
+            word_ptr->word = to_lower_case(word_ptr->word);
             // Находим совпадения по окончанию слова
             if (word_ptr->word.substr((word_ptr->word).length() - (cur_end->name).length()) == cur_end->name)
             {
@@ -427,7 +496,7 @@ void check_endings()
                         found_spch = true;
                         max_size = cur_size;
                     }
-                    // Не первое - меням
+                    // Не первое - меняем
                     else {
                         Ending* ptr;
                         ptr = word_to_ending;
@@ -461,26 +530,7 @@ void check_endings()
     }
 }
 
-// Функция перевода в нижний регистр
-string to_lower_case(string str) {
-    string result = str;
-
-    for (char& c : result) {
-        // Русские заглавные буквы
-        if (c >= 'А' && c <= 'Я') {
-            c = c + 32; // Преобразуем в строчные
-        }
-        else if (c == 'Ё') {
-            c = 'ё';
-        }
-        // Английские и другие символы
-        else if (c >= 'A' && c <= 'Z') {
-            c = c + 32;
-        }
-    }
-    return result;
-}
-
+// Функция распознавания предлогов
 void check_prep() {
     if (word_to_ending == nullptr) return;
 
@@ -556,7 +606,7 @@ void check_prep() {
         if (current->prt_of_spch == 0b00000001 &&
             next->prt_of_spch == 0b00000001) {
             // Объединяем предлоги
-            current->name = current->name + "_" + next->name;
+            current->name = current->name + " " + next->name;
 
             // Удаляем следующий узел
             current->next_ptr = next->next_ptr;
@@ -571,6 +621,7 @@ void check_prep() {
     }
 }
 
+// Функция распознавания частиц, междометий и союзов
 void check_particles() {
     if (word_to_ending == nullptr) return;
 
@@ -712,8 +763,8 @@ void delete_adj() {
         // Если нашли однозначно прилагательное - удаляем
         if (current->prt_of_spch == 0b00100000) {
             to_delete = current;
-            if (current->next_ptr != nullptr && ((current->next_ptr->prt_of_spch & 0b10000000) == 0b10000000))
-                current->next_ptr->padezh = "нип";
+            if (current->next_ptr != nullptr && (((current->next_ptr->prt_of_spch & 0b10000000) == 0b10000000) || (current->next_ptr->prt_of_spch == 0b00001000)))
+                current->next_ptr->padezh = "доп";
             // Обновляем связи
             if (current->pred_ptr != nullptr) {
                 current->pred_ptr->next_ptr = current->next_ptr;
@@ -835,6 +886,7 @@ void LoadWord(string word)
     ins_word->word = word;
     ins_word->pred_ptr = nullptr;
     ins_word->next_ptr = nullptr;
+    // Если корень непустой
     if (main_ptr != nullptr)
     {
         ptr = main_ptr;
@@ -845,6 +897,7 @@ void LoadWord(string word)
         ptr->next_ptr = ins_word;
         ins_word->pred_ptr = ptr;
     }
+    // Если пустой
     else
         main_ptr = ins_word;
 }
@@ -853,13 +906,13 @@ void LoadWord(string word)
 void out_ending()
 {
     if (word_to_ending == nullptr) return;
-    ofstream out;          // поток для записи
+    ofstream out;
     if (test_file_open == false) {
-        out.open("test.txt", ios::out);      // открываем файл для записи
+        out.open("test.txt", ios::out);
         test_file_open = true;
     }
     else
-        out.open("test.txt", ios::app);      // открываем файл для записи
+        out.open("test.txt", ios::app);
     if (out.is_open())
     {
         Ending* ins_word;
@@ -871,6 +924,24 @@ void out_ending()
         }
     }
     out.close();
+}
+
+// Функция проверки, состоит ли строка только из пробелов
+bool only_space(string word) {
+    for (int i = 0; i < word.length(); i++) {
+        if (word[i] != ' ')
+            return 0;
+    }
+    return 1;
+}
+
+// Проверяет, является ли символ буквой (русской/английской) или разрешённым символом
+bool is_alphabetic(char symbol) {
+    if (('А' <= symbol and symbol <= 'я') or symbol == 'ё' or symbol == 'Ё' or
+        symbol == '-')
+        return 1;
+    else
+        return 0;
 }
 
 // Функция обработки текста по предложениям
@@ -898,22 +969,22 @@ void Analize_text(string filename) {
         istringstream iss(line);
         string word;
         while (iss >> word) {
-            for (char& c : word) {
-                if ((ispunct(c) || c == '\"' || c == '\'') && c != '.' && c != '?' && c != '!') {
-                    c = ' ';
-                }
-            }
+            //for (char& c : word) {
+            //    if ((ispunct(c) || c == '\"' || c == '\'') && c != '.' && c != '?' && c != '!') {
+            //        c = ' ';
+            //    }
+            //}
             // Проверяем, заканчивается ли слово на .!?
             if (!word.empty() && (word.back() == '.' || word.back() == '?' || word.back() == '!')) {
                 // Убираем знак препинания
-                string clean_word = word.substr(0, word.length() - 1);
-                if (word.back() == '.' && word[word.length() - 2] == '.')
-                    clean_word = word.substr(0, word.length() - 3);
+                //string clean_word = word.substr(0, word.length() - 1);
+                //if (word.back() == '.' && word[word.length() - 2] == '.')
+                //    clean_word = word.substr(0, word.length() - 3);
 
-                // Добавляем слово только если оно не пустое
-                if (!clean_word.empty()) {
+                ////Добавляем слово только если оно не пустое
+                //if (!clean_word.empty()) {
                     num_sent++;
-                }
+                //}
             }
         }
     }
@@ -925,35 +996,43 @@ void Analize_text(string filename) {
     while (getline(fin, line)) {
         // Заменяем все лишние знаки препинания на пробелы
         istringstream iss(line);
-        string word;
+        string word = "";
         while (iss >> word) {
             if (sentance == "")
                 sentance = word;
             else
                 sentance = sentance + " " + word;
-            for (char& c : word) {
-                if ((ispunct(c) || c == '\"' || c == '\'') && c != '.' && c != '?' && c != '!') {
-                    c = ' ';
-                }
-            }
+            //for (char& c : word) {
+            //    if ((ispunct(c) || c == '\"' || c == '\'') && c != '.' && c != '?' && c != '!') {
+            //        c = ' ';
+            //    }
+            //}
             // Проверяем, заканчивается ли слово на .!?
             if (!word.empty() && (word.back() == '.' || word.back() == '?' || word.back() == '!')) {
-                // Убираем знак препинания
-                string clean_word = word.substr(0, word.length() - 1);
-                if (word.back() == '.' && word[word.length()-2] == '.')
-                    clean_word = word.substr(0, word.length() - 3);
-
+                //// Убираем знак препинания
+                //string clean_word = word.substr(0, word.length() - 1);
+                //// Проверяем на многоточие
+                //if (word.size() >= 3 && word[word.size() - 1] == '.' && word[word.size() - 2] == '.' && word[word.size() - 3] == '.') {
+                //    clean_word = word.substr(0, word.length() - 3);
+                //}
+                for (int i = 0; i < word.length(); i++) {
+                    if (!is_alphabetic(word[i]) || ((i == word.length()-1) && word[i] == '-')) {
+                        word.erase(i, 1);
+                        i--;
+                    }
+                }   
+                
                 // Добавляем слово только если оно не пустое
-                if (!clean_word.empty()) {
-                    LoadWord(clean_word);
+                if (!word.empty() && word[0]) {
+                    LoadWord(word);
                     has_words_in_sentence = true;
                 }
                 // Обрабатываем предложение только если в нем были слова
                 if (has_words_in_sentence) {
-                    fout << sentence_number << "." << sentance << " ";
+                    fout << sentence_number << "." << sentance << "\n";
                     sentance = "";
                     check_endings();
-                    //check_particles();
+                    check_particles();
                     check_prep();
                     check_pronoun();
                     check_numaral();
@@ -964,14 +1043,22 @@ void Analize_text(string filename) {
                     free_struct_stword();
                     free_struct_endings(word_to_ending);
                     cout << "\rПроанализировано: " << setprecision(2) << fixed
-                        << (float)sentence_number / num_sent * 100 << "%" << flush;
+                       << (float)sentence_number / num_sent * 100 << "%" << flush;
                     sentence_number++;
                     has_words_in_sentence = false;
                 }
             }
             else {
                 // Обычное слово без знаков конца предложения
-                LoadWord(word);
+                for (int i = 0; i < word.length(); i++) {
+                    if (!is_alphabetic(word[i]) || ((i == word.length() - 1) && word[i] == '-')) {
+                        word.erase(i, 1);
+                        i--;
+                    }
+                }
+                if (!word.empty() && word[0]) {
+                    LoadWord(word);
+                }
                 has_words_in_sentence = true;
             }
         }
@@ -1003,7 +1090,7 @@ void Analize_text(string filename) {
 // Функция считывания правил окончаний
 bool parser_endings() {
     string line;
-    ifstream endings("Окончания.txt"); // окрываем файл окончаний
+    ifstream endings("Окончания.txt");
     if (endings.is_open()) {
         while (getline(endings, line)) {
             // Для прилагательных
@@ -1103,7 +1190,7 @@ bool parser_prep() {
 // Функция считывания правил союзов, частиц и междометий
 bool parser_particles() {
     string line;
-    ifstream particle("Союзы, частицы, междометия.txt"); // окрываем файл окончаний
+    ifstream particle("Союзы, частицы, междометия.txt");
     if (particle.is_open()) {
         while (getline(particle, line)) {
             add_ending(main_particles, line, 0b00000000, "-", "-", "-", "-");
@@ -1111,7 +1198,7 @@ bool parser_particles() {
     }
     else
         return 0;
-    particle.close();     // закрываем файл
+    particle.close();
     return 1;
 }
 
@@ -1153,20 +1240,43 @@ bool parser_numeral() {
 int file_choose() {
     int position = 0;
     while (position > -1) {
+        string* clean_file_names;
         string* file_names;
-        int num_files;
+        int num_clean_files = 0;
+        int num_files = 0;
         // Получаем список txt-файлов в директории программы
         string program_dir = get_program_dir();
         file_names = list_files(program_dir, num_files);
-        if (file_names == nullptr) {
+        for (int i = 0; i < num_files; i++) {
+            if (file_names[i] == "Числительные.txt" || file_names[i] == "Местоимения.txt" ||
+                file_names[i] == "Окончания.txt" || file_names[i] == "Предлоги.txt" ||
+                file_names[i] == "Союзы, частицы, междометия.txt" || file_names[i].find("(с нумерацией).txt") != string::npos) {
+                continue;
+            }
+            num_clean_files++;
+        }
+
+        if (num_clean_files == 0) {
             cout << "\nВ папке нет файлов. Добавьте нужные файлы и вернитесь в это меню.\n\n";
             system("pause");
             free_struct_depolnenie();
             free_struct_statistic();
             return -1;
         }
+
+        clean_file_names = new string[num_clean_files];
+        int j = 0;
+        for (int i = 0; i < num_files; i++) {
+            if (file_names[i] == "Числительные.txt" || file_names[i] == "Местоимения.txt" ||
+                file_names[i] == "Окончания.txt" || file_names[i] == "Предлоги.txt" ||
+                file_names[i] == "Союзы, частицы, междометия.txt" || file_names[i].find("(с нумерацией).txt") != string::npos) {
+                j++;
+                continue;
+            }
+            clean_file_names[i-j] = file_names[i];
+        }
         // Пользователь выбирает файл
-        dynamic_menu(position, file_names, num_files, main_menu_text);
+        dynamic_menu(position, clean_file_names, num_clean_files, main_menu_text);
         if (position < 0) {
             free_struct_depolnenie();
             free_struct_statistic();
@@ -1174,7 +1284,7 @@ int file_choose() {
         }
 
         // Формируем полный путь к файлу
-        program_dir = program_dir + "\\" + file_names[position];
+        program_dir = program_dir + "\\" + clean_file_names[position];
         ifstream fin(program_dir);
 
         if (!fin.is_open()) {  // Если не удалось открыть файл
@@ -1187,13 +1297,64 @@ int file_choose() {
     }
 }
 
+// Функция проверки на специальные символы в имени файла
+// 0 - нет спецсимволов; 1 - есть
+bool check_special_sym(char symbol) {
+    return (symbol == '\\' or symbol == '/' or symbol == ':' or symbol == '*' or symbol == '?' or symbol == '\"' or symbol == '<' or symbol == '>' or symbol == '|');
+}
+
+// Функция обработки backspace (удаление последнего символа)
+void backspace(string& string) {
+    if (string == "") return; // Если строка пустая, игнорируем backspace
+    printf("\b \b");  // Удаление символа из консоли
+    string.erase((string.length()) - 1, 1);  // Удаление символа из строки
+    return;
+}
+
+// Чтение слова с клавиатуры с обработкой специальных клавиш
+// 0 - ENTER; -1 - стрелка влево; -2 - ESCAPE
+int read_word(string& word) {
+    char symbol = 0;
+    while (symbol != ENTER) {
+        symbol = _getch();
+
+        // Обработка стрелок
+        if (_kbhit()) {
+            char arrow = _getch();
+            if (arrow == 75)  // Стрелка влево - выход
+                return -1;
+            if (arrow == 77) {  // Стрелка вправо - подтверждение
+                break;
+            }
+            else
+                continue;
+        }
+        if (symbol == TAB) continue;  // Игнорируем Tab
+        if (symbol == ENTER) break;   // Enter - завершение ввода
+        if (symbol == ESCAPE) return -2;  // Escape - выход
+        if (check_special_sym(symbol)) {  // Игнорируем спецсимволы
+            continue;
+        }
+        if (symbol == BSPACE) {  // Backspace - удаление символа
+            backspace(word);
+            continue;
+        }
+
+        cout << symbol;
+        word += symbol;  // Добавляем символ к строке
+    }
+    return 0;
+}
+
 // Функция вывода по хронологии
 int hrono_out() {
     system("cls");
+    // Отображения процесса подсчета
     cout << "Подождите, идет подсчет статистики дополнений...\n";
     Statistic();
     system("cls");
     cout << menu_1_1_1_text;
+    // Подсчет количества дополнений
     Depolnenie* current = main_dep;
     int count = 0;
     while (current != nullptr)
@@ -1201,22 +1362,56 @@ int hrono_out() {
         count++;
         current = current->next_ptr;
     }
-    string filename = WriteFilename();
-    if (filename.find(".txt") == -1)
-    {
-        filename = filename + ".txt";
-    }
-    ofstream file(filename);
-    if (!file.is_open()) {
-        cout << "Ошибка открытия файла: " << filename << endl;
-        return -1;
+    // Открытие файла для вывода
+    string filename;
+    bool wrong_entry = false;
+    ofstream file;
+    while (!wrong_entry) {
+        wrong_entry = true;
+        int result = read_word(filename);
+        if (result < 0)
+            return result;
+        // Проверка длины имени файла
+        if (filename.length() >= 255) {
+            cout << "Название слишком большое. Введите более короткое.\n";
+            filename.clear();
+            wrong_entry = false;
+            continue;
+        }
+        // Проверка на пустое имя
+        if (filename.length() == 0) {
+            cout << "Название не может быть пустым. Введите другое.\n";
+            filename.clear();
+            wrong_entry = false;
+            continue;
+        }
+        // Проверка на имя из пробелов
+        if (only_space(filename)) {
+            cout << "\nНазвание не может состоять только из пробелов. Введите другое.\n";
+            filename.clear();
+            wrong_entry = false;
+            continue;
+        }
+        // Добавляем расширение .txt, если его нет
+        if (filename.find(".txt") == filename.npos) filename += ".txt";
+
+        // Пытаемся открыть файл
+        file.open(filename);
+        if (!file.is_open()) {
+            cout << "Не удалость открыть или создать файл. Попробуйте еще раз.\n";
+            filename.clear();
+            wrong_entry = false;
+            continue;
+        }
     }
     file << "Текст из файла:" << filename_text << endl;
     file << "=================================\n";
+    // Для вывода по хронологии
     if (choice == 0)
     {
         file << "Дополнения в хронологии с текстом\n";
     }
+    // Для вывода по алфавиту
     if (choice == 1)
     {
         file << "Дополнения, отсортированные по алфавиту\n";
@@ -1224,21 +1419,28 @@ int hrono_out() {
 
     file << "=================================\n";
 
+    // Цикл вывода в файл
     WordStat* cur_stat = main_stat;
     while (cur_stat != nullptr)
     {
-        file << cur_stat->word << " встречается " << cur_stat->count << " раз(а) в следующих предложениях: ";//<<cur_stat->sentence_numbers<<'\n';
+        file << cur_stat->word << " встречается " << cur_stat->count << " раз(а) в следующих предложениях: ";
+        // По хронологии
         if (choice == 0)
         {
+            int pred_number = 0;
             for (int i = 0; i < cur_stat->sentence_numbers.size(); i++)
             {
-                file << cur_stat->sentence_numbers[i];
-                if (i != cur_stat->sentence_numbers.size() - 1)
+                if (cur_stat->sentence_numbers[i] == pred_number)
+                    continue;
+                if (i != 0)
                 {
                     file << ", ";
                 }
+                file << cur_stat->sentence_numbers[i];
+                pred_number = cur_stat->sentence_numbers[i];
             }
         }
+        // По алфавиту
         if (choice == 1)
         {
             for (int i = cur_stat->sentence_numbers.size() - 1; i >= 0; i--)
@@ -1258,9 +1460,10 @@ int hrono_out() {
     file << "Всего: " << count << " дополнений\n";
 
     file.close();
-    cout << "Результат записан в " << filename << endl;
+    cout << "\nРезультат записан в " << filename << endl;
     system("pause");
     system("cls");
+    // Очистка ненужных структур
     free_struct_depolnenie();
     free_struct_statistic();
     num_depo = 0;
@@ -1269,20 +1472,24 @@ int hrono_out() {
 
 // Функция вывода в отсортированном формате
 int sorted_out() {
+    // Изменение флага типа вывода
     choice = 1;
     system("cls");
     cout << "Подождите, идет сортировка дополнений...\n";
+    // Сортировка
     SortDepolnenie();
     system("cls");
-    hrono_out();
+    // Аналогичный вывод
+    int result = hrono_out();
     choice = 0;
-    return -2;
+    return result;
 }
 
 int main()
 {
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
+    // Добавление всех правил
     while (!parser_endings() or !parser_prep() or !parser_particles() or !parser_pronoun() or !parser_numeral())
     {
         cout << "Файлы правил не найдены, добавьте их в папку с программой, иначе невозможно продолжить работу программы.\n\n";
