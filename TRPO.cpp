@@ -1427,29 +1427,67 @@ int hrono_out() {
         // По хронологии
         if (choice == 0)
         {
-            int pred_number = 0;
+            int num_common = 1;
+            bool is_first = true;
+
             for (int i = 0; i < cur_stat->sentence_numbers.size(); i++)
             {
-                if (cur_stat->sentence_numbers[i] == pred_number)
+                // Проверяем, не последний ли это элемент и совпадает ли со следующим
+                if (i + 1 < cur_stat->sentence_numbers.size() &&
+                    cur_stat->sentence_numbers[i] == cur_stat->sentence_numbers[i + 1]) {
+                    num_common++;
                     continue;
-                if (i != 0)
-                {
+                }
+
+                // Выводим разделитель (кроме первого элемента)
+                if (!is_first) {
                     file << ", ";
                 }
+                is_first = false;
+
+                // Выводим число
                 file << cur_stat->sentence_numbers[i];
-                pred_number = cur_stat->sentence_numbers[i];
+
+                // Выводим количество повторений в скобках, если больше 1
+                if (num_common > 1) {
+                    file << "[" << num_common << "]";
+                }
+
+                // Сбрасываем счетчик для следующего числа
+                num_common = 1;
             }
         }
         // По алфавиту
         if (choice == 1)
         {
+            int num_common = 1;
+            bool is_first = true;
+
+            // Начинаем с последнего элемента
             for (int i = cur_stat->sentence_numbers.size() - 1; i >= 0; i--)
             {
-                file << cur_stat->sentence_numbers[i];
-                if (i != 0)
-                {
+                // Проверяем, не первый ли это элемент и совпадает ли с предыдущим (в обратном порядке)
+                if (i - 1 >= 0 && cur_stat->sentence_numbers[i] == cur_stat->sentence_numbers[i - 1]) {
+                    num_common++;
+                    continue;
+                }
+
+                // Выводим разделитель (кроме первого выводимого элемента)
+                if (!is_first) {
                     file << ", ";
                 }
+                is_first = false;
+
+                // Выводим число
+                file << cur_stat->sentence_numbers[i];
+
+                // Выводим количество повторений в скобках, если больше 1
+                if (num_common > 1) {
+                    file << "[" << num_common << "]";
+                }
+
+                // Сбрасываем счетчик для следующего числа
+                num_common = 1;
             }
         }
         file << endl;
@@ -1490,9 +1528,28 @@ int main()
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
     // Добавление всех правил
-    while (!parser_endings() or !parser_prep() or !parser_particles() or !parser_pronoun() or !parser_numeral())
-    {
-        cout << "Файлы правил не найдены, добавьте их в папку с программой, иначе невозможно продолжить работу программы.\n\n";
+    while (!parser_endings()) {
+        cout << "Файл окончаний не найден, добавьте его в папку с программой, иначе невозможно продолжить работу программы.\n\n";
+        system("pause");
+        system("cls");
+    }
+    while (!parser_prep()) {
+        cout << "Файл предлогов не найден, добавьте его в папку с программой, иначе невозможно продолжить работу программы.\n\n";
+        system("pause");
+        system("cls");
+    }
+    while (!parser_particles()) {
+        cout << "Файл союзов, частиц и междометий не найден, добавьте его в папку с программой, иначе невозможно продолжить работу программы.\n\n";
+        system("pause");
+        system("cls");
+    }
+    while (!parser_pronoun()) {
+        cout << "Файл местоимений не найден, добавьте его в папку с программой, иначе невозможно продолжить работу программы.\n\n";
+        system("pause");
+        system("cls");
+    }
+    while (!parser_numeral()) {
+        cout << "Файл числительных не найдены, добавьте их в папку с программой, иначе невозможно продолжить работу программы.\n\n";
         system("pause");
         system("cls");
     }
