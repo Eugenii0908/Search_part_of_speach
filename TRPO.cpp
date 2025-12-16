@@ -20,11 +20,11 @@ long long num_depo = 0;
 bool test_file_open = false;
 
 // Тексты интерфейса
-const string intro = "Это программа для распознавания дополнений в тексте.\n-Для перемещения по пунктам используйте стрелки вверх/вниз\n"
+const string intro = "Инструкция по работе с программой:\n-Для перемещения по пунктам используйте стрелки вверх/вниз\n"
 "-Для подтверждения выбора нажмите ENTER или стрелку вправо\n"
-"-Для выхода из программы нажмите на ESCAPE или стрелку влево\n\nДля продолжения нажмите на ENTER или стрелку вправо.";
+"-Для выхода из программы в меню инструкции нажмите на ESCAPE или стрелку влево\n-Для перехода назад в любом месте программы нажмите на стрелку влево, для выхода к инструкции нажмите ESCAPE\n\nДля продолжения нажмите на ENTER или стрелку вправо.\n";
 const string main_menu_text = "Файл должен находиться в папке с программой. Выберите файл, который хотите проанализировать:\n";
-const string menu_1_1_text = "Выберите тип вывода результатов в файл:\n";
+const string menu_1_1_text = "Проанализированный текст выведен в нумерованном виде в файл с одноименным названием в папку с программой.\nВыберите тип вывода результатов в файл:\n";
 string menu_1_1_list[] = {"Вывод дополнений в хронологии с текстом", "Вывод дополнений в отсортированном формате"};
 const string menu_1_1_1_text = "Введите название файла, в который хотите вывести данные:\n\n";
 
@@ -1396,6 +1396,22 @@ int hrono_out() {
         if (filename.find(".txt") == filename.npos) filename += ".txt";
 
         // Пытаемся открыть файл
+        ifstream file_check;
+        file_check.open(filename);
+        if (file_check.is_open()) {
+            int result = no_or_yes("Файл с таким именем уже существует, перезаписать данный файл?\n");
+            if (result == -2)
+                return -2;
+            else if (result != 1) {
+                filename.clear();
+                wrong_entry = false;
+                system("cls");
+                cout << menu_1_1_1_text;
+                continue;
+            }
+            else
+                file_check.close();
+        }
         file.open(filename);
         if (!file.is_open()) {
             cout << "Не удалость открыть или создать файл. Попробуйте еще раз.\n";
@@ -1523,35 +1539,103 @@ int sorted_out() {
     return result;
 }
 
+// Функция проверки наличия всех необходимых файлов правил
+bool check_rules_files() {
+    string required_files[] = {
+        "Окончания.txt",
+        "Предлоги.txt",
+        "Союзы, частицы, междометия.txt",
+        "Местоимения.txt",
+        "Числительные.txt"
+    };
+
+    int num_files = 5;
+    bool all_found = true;
+
+    while (true) {
+        system("cls");
+        cout << "Это программа для распознавания дополнений в тексте. \nДля работы данной программы необходимо наличие всех правил в папке с программой.\n\n";
+        cout << "Необходимые файлы правил:\n";
+
+        // Проверяем каждый файл
+        for (int i = 0; i < num_files; i++) {
+            ifstream file(required_files[i]);
+            if (file.is_open()) {
+                cout << required_files[i] << " - найден.\n";
+                file.close();
+            }
+            else {
+                cout << required_files[i] << " - не найден.\n";
+                all_found = false;
+            }
+        }
+
+        if (all_found) {
+            cout << "\nВсе необходимые файлы найдены.\n";
+            system("pause");
+            return true;
+        }
+        else {
+            cout << "\nНе все необходимые файлы найдены.\n";
+            cout << "Добавьте недостающие файлы в папку с программой.\n\n";
+
+            cout << "Для выхода из программы нажмите ESCAPE, если хотите еще раз проверить наличие файлов - нажмите ENTER.";
+            do {
+                char choice = _getch();
+                if (choice == ESCAPE) { // ESC
+                    return false;
+                }
+                else if (choice == ENTER) { // ENTER
+                    all_found = true;
+                    break;
+                }
+            } while (choice != ESCAPE && choice != ENTER);
+        }
+    }
+}
+
 int main()
 {
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
-    // Добавление всех правил
-    while (!parser_endings()) {
-        cout << "Файл окончаний не найден, добавьте его в папку с программой, иначе невозможно продолжить работу программы.\n\n";
+    //// Добавление всех правил
+    //while (!parser_endings()) {
+    //    cout << "Файл окончаний не найден, добавьте его в папку с программой, иначе невозможно продолжить работу программы.\n\n";
+    //    system("pause");
+    //    system("cls");
+    //}
+    //while (!parser_prep()) {
+    //    cout << "Файл предлогов не найден, добавьте его в папку с программой, иначе невозможно продолжить работу программы.\n\n";
+    //    system("pause");
+    //    system("cls");
+    //}
+    //while (!parser_particles()) {
+    //    cout << "Файл союзов, частиц и междометий не найден, добавьте его в папку с программой, иначе невозможно продолжить работу программы.\n\n";
+    //    system("pause");
+    //    system("cls");
+    //}
+    //while (!parser_pronoun()) {
+    //    cout << "Файл местоимений не найден, добавьте его в папку с программой, иначе невозможно продолжить работу программы.\n\n";
+    //    system("pause");
+    //    system("cls");
+    //}
+    //while (!parser_numeral()) {
+    //    cout << "Файл числительных не найдены, добавьте их в папку с программой, иначе невозможно продолжить работу программы.\n\n";
+    //    system("pause");
+    //    system("cls");
+    //}
+    // // Загружаем все правила с проверкой
+    if (!check_rules_files()) {
+        cout << "\nПрограмма завершена.\n";
         system("pause");
-        system("cls");
+        return 0;
     }
-    while (!parser_prep()) {
-        cout << "Файл предлогов не найден, добавьте его в папку с программой, иначе невозможно продолжить работу программы.\n\n";
-        system("pause");
-        system("cls");
-    }
-    while (!parser_particles()) {
-        cout << "Файл союзов, частиц и междометий не найден, добавьте его в папку с программой, иначе невозможно продолжить работу программы.\n\n";
-        system("pause");
-        system("cls");
-    }
-    while (!parser_pronoun()) {
-        cout << "Файл местоимений не найден, добавьте его в папку с программой, иначе невозможно продолжить работу программы.\n\n";
-        system("pause");
-        system("cls");
-    }
-    while (!parser_numeral()) {
-        cout << "Файл числительных не найдены, добавьте их в папку с программой, иначе невозможно продолжить работу программы.\n\n";
-        system("pause");
-        system("cls");
+    else {
+        parser_endings();
+        parser_prep();
+        parser_particles();
+        parser_pronoun();
+        parser_numeral();
     }
     // Создаем главное меню
     root = create_node("main_menu", intro, nullptr, 0, nullptr);
